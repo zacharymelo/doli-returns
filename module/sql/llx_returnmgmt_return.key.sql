@@ -4,3 +4,4 @@ ALTER TABLE llx_returnmgmt_return ADD INDEX idx_returnmgmt_return_fk_product (fk
 ALTER TABLE llx_returnmgmt_return ADD INDEX idx_returnmgmt_return_status (status);
 ALTER TABLE llx_returnmgmt_return ADD INDEX idx_returnmgmt_return_serial (serial_number);
 ALTER TABLE llx_returnmgmt_return ADD INDEX idx_returnmgmt_return_fk_user_assigned (fk_user_assigned);
+ALTER TABLE llx_returnmgmt_return ADD INDEX idx_returnmgmt_return_fk_expedition (fk_expedition);

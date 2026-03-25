@@ -20,6 +20,11 @@ class ReturnRequestLine extends CommonObjectLine
 	public $description;
 	public $qty;
 	public $serial_number;
+	public $fk_expedition;
+	public $fk_expeditiondet;
+	public $fk_commandedet;
+	public $fk_entrepot;
+	public $comment;
 	public $subprice;
 	public $total_ht;
 	public $tva_tx;
@@ -42,17 +47,22 @@ class ReturnRequestLine extends CommonObjectLine
 	 */
 	public function insert()
 	{
-		$error = 0;
-
 		$sql = "INSERT INTO ".MAIN_DB_PREFIX."returnmgmt_return_line (";
 		$sql .= "fk_returnmgmt_return, fk_product, description, qty";
-		$sql .= ", serial_number, subprice, total_ht, tva_tx, rang, date_creation";
+		$sql .= ", serial_number, fk_expedition, fk_expeditiondet, fk_commandedet";
+		$sql .= ", fk_entrepot, comment";
+		$sql .= ", subprice, total_ht, tva_tx, rang, date_creation";
 		$sql .= ") VALUES (";
 		$sql .= ((int) $this->fk_returnmgmt_return);
 		$sql .= ", ".(empty($this->fk_product) ? "NULL" : ((int) $this->fk_product));
 		$sql .= ", ".(empty($this->description) ? "NULL" : "'".$this->db->escape($this->description)."'");
 		$sql .= ", ".((float) $this->qty);
 		$sql .= ", ".(empty($this->serial_number) ? "NULL" : "'".$this->db->escape($this->serial_number)."'");
+		$sql .= ", ".(empty($this->fk_expedition) ? "NULL" : ((int) $this->fk_expedition));
+		$sql .= ", ".(empty($this->fk_expeditiondet) ? "NULL" : ((int) $this->fk_expeditiondet));
+		$sql .= ", ".(empty($this->fk_commandedet) ? "NULL" : ((int) $this->fk_commandedet));
+		$sql .= ", ".(empty($this->fk_entrepot) ? "NULL" : ((int) $this->fk_entrepot));
+		$sql .= ", ".(empty($this->comment) ? "NULL" : "'".$this->db->escape($this->comment)."'");
 		$sql .= ", ".((float) $this->subprice);
 		$sql .= ", ".((float) $this->total_ht);
 		$sql .= ", ".((float) $this->tva_tx);
@@ -82,6 +92,8 @@ class ReturnRequestLine extends CommonObjectLine
 		$sql .= ", description = ".(empty($this->description) ? "NULL" : "'".$this->db->escape($this->description)."'");
 		$sql .= ", qty = ".((float) $this->qty);
 		$sql .= ", serial_number = ".(empty($this->serial_number) ? "NULL" : "'".$this->db->escape($this->serial_number)."'");
+		$sql .= ", fk_entrepot = ".(empty($this->fk_entrepot) ? "NULL" : ((int) $this->fk_entrepot));
+		$sql .= ", comment = ".(empty($this->comment) ? "NULL" : "'".$this->db->escape($this->comment)."'");
 		$sql .= ", subprice = ".((float) $this->subprice);
 		$sql .= ", total_ht = ".((float) $this->total_ht);
 		$sql .= ", tva_tx = ".((float) $this->tva_tx);

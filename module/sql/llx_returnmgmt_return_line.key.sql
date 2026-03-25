@@ -1,2 +1,3 @@
 ALTER TABLE llx_returnmgmt_return_line ADD INDEX idx_returnmgmt_return_line_fk (fk_returnmgmt_return);
 ALTER TABLE llx_returnmgmt_return_line ADD INDEX idx_returnmgmt_return_line_fk_product (fk_product);
+ALTER TABLE llx_returnmgmt_return_line ADD INDEX idx_returnmgmt_return_line_fk_expeditiondet (fk_expeditiondet);

@@ -115,13 +115,39 @@ NumberingModel = Numbering Model
 # Shipment line picker
 SelectCustomerFirst = Select Customer First
 Shipment = Shipment
+ShipmentRef = Shipment Ref
+OrderRef = Order Ref
 Order = Order
+QtyOrdered = Qty Ordered
 QtyShipped = Qty Shipped
+QtyAlreadyReturned = Qty Already Returned
 ReturnQty = Return Qty
 SelectItemsToReturn = Select
 NoShipmentsFound = No shipments found for this customer
 SelectAtLeastOneLine = Please select at least one item to return
 Description = Description
+Comment = Comment
+LotSerial = Lot/Serial
+
+# Shipment-initiated returns
+CreateReturnFromShipment = Create Return
+ReturnValidated = Return %s validated
+SelectShipment = Select a shipment
+CustomerShipments = Shipments for this customer
+SelectShipmentToContinue = Select a shipment to continue
+
+# Credit note
+CreateCreditNote = Create Credit Note
+ConfirmCreateCreditNote = Confirm the creation of a credit note?
+ProductsInInvoice = Products in invoice %s
+CreditNoteCreated = Credit note %s created
+NoInvoiceLinked = No invoice linked to this return
+
+# Additional fields
+ReturnDate = Return Date
+Label = Label
+NotePublic = Note (public)
+NotePrivate = Note (private)
 
 # Permissions
 Permission520001a = Read return requests

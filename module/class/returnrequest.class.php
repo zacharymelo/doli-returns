@@ -62,6 +62,9 @@ class ReturnRequest extends CommonObject
 	public $refund_amount;
 	public $exchange_fk_product;
 	public $exchange_serial_number;
+	public $fk_expedition;
+	public $label;
+	public $date_return;
 	public $status;
 	public $note_private;
 	public $note_public;
@@ -114,8 +117,8 @@ class ReturnRequest extends CommonObject
 		$sql = "INSERT INTO ".MAIN_DB_PREFIX."returnmgmt_return (";
 		$sql .= "ref, entity, fk_soc, fk_product, serial_number";
 		$sql .= ", return_reason, resolution_type, fk_warehouse";
-		$sql .= ", fk_user_assigned, status";
-		$sql .= ", note_private, note_public";
+		$sql .= ", fk_user_assigned, fk_expedition, label, date_return";
+		$sql .= ", status, note_private, note_public";
 		$sql .= ", date_creation, fk_user_creat";
 		$sql .= ") VALUES (";
 		$sql .= "'".$this->db->escape($this->ref)."'";
@@ -127,6 +130,9 @@ class ReturnRequest extends CommonObject
 		$sql .= ", ".(empty($this->resolution_type) ? "NULL" : "'".$this->db->escape($this->resolution_type)."'");
 		$sql .= ", ".(empty($this->fk_warehouse) ? "NULL" : ((int) $this->fk_warehouse));
 		$sql .= ", ".(empty($this->fk_user_assigned) ? "NULL" : ((int) $this->fk_user_assigned));
+		$sql .= ", ".(empty($this->fk_expedition) ? "NULL" : ((int) $this->fk_expedition));
+		$sql .= ", ".(empty($this->label) ? "NULL" : "'".$this->db->escape($this->label)."'");
+		$sql .= ", ".(empty($this->date_return) ? "NULL" : "'".$this->db->idate($this->date_return)."'");
 		$sql .= ", ".self::STATUS_DRAFT;
 		$sql .= ", ".(empty($this->note_private) ? "NULL" : "'".$this->db->escape($this->note_private)."'");
 		$sql .= ", ".(empty($this->note_public) ? "NULL" : "'".$this->db->escape($this->note_public)."'");
@@ -177,6 +183,7 @@ class ReturnRequest extends CommonObject
 		$sql .= ", t.return_tracking, t.date_received, t.date_resolved";
 		$sql .= ", t.fk_user_assigned, t.condition_on_receipt";
 		$sql .= ", t.refund_amount, t.exchange_fk_product, t.exchange_serial_number";
+		$sql .= ", t.fk_expedition, t.label, t.date_return";
 		$sql .= ", t.status, t.note_private, t.note_public";
 		$sql .= ", t.date_creation, t.date_validation, t.date_closed, t.tms";
 		$sql .= ", t.fk_user_creat, t.fk_user_valid, t.fk_user_close, t.fk_user_modif";
@@ -214,6 +221,9 @@ class ReturnRequest extends CommonObject
 				$this->refund_amount          = $obj->refund_amount;
 				$this->exchange_fk_product    = $obj->exchange_fk_product;
 				$this->exchange_serial_number = $obj->exchange_serial_number;
+				$this->fk_expedition          = $obj->fk_expedition;
+				$this->label                  = $obj->label;
+				$this->date_return            = $this->db->jdate($obj->date_return);
 				$this->status                 = $obj->status;
 				$this->note_private           = $obj->note_private;
 				$this->note_public            = $obj->note_public;
@@ -252,7 +262,8 @@ class ReturnRequest extends CommonObject
 		$this->lines = array();
 
 		$sql = "SELECT rowid, fk_returnmgmt_return, fk_product, description";
-		$sql .= ", qty, serial_number, subprice, total_ht, tva_tx, rang";
+		$sql .= ", qty, serial_number, fk_expedition, fk_expeditiondet, fk_commandedet";
+		$sql .= ", fk_entrepot, comment, subprice, total_ht, tva_tx, rang";
 		$sql .= " FROM ".MAIN_DB_PREFIX."returnmgmt_return_line";
 		$sql .= " WHERE fk_returnmgmt_return = ".((int) $this->id);
 		$sql .= " ORDER BY rang ASC, rowid ASC";
@@ -270,6 +281,11 @@ class ReturnRequest extends CommonObject
 				$line->description           = $obj->description;
 				$line->qty                   = $obj->qty;
 				$line->serial_number         = $obj->serial_number;
+				$line->fk_expedition         = $obj->fk_expedition;
+				$line->fk_expeditiondet      = $obj->fk_expeditiondet;
+				$line->fk_commandedet        = $obj->fk_commandedet;
+				$line->fk_entrepot           = $obj->fk_entrepot;
+				$line->comment               = $obj->comment;
 				$line->subprice              = $obj->subprice;
 				$line->total_ht              = $obj->total_ht;
 				$line->tva_tx                = $obj->tva_tx;
@@ -313,6 +329,9 @@ class ReturnRequest extends CommonObject
 		$sql .= ", refund_amount = ".(empty($this->refund_amount) ? "NULL" : ((float) $this->refund_amount));
 		$sql .= ", exchange_fk_product = ".(empty($this->exchange_fk_product) ? "NULL" : ((int) $this->exchange_fk_product));
 		$sql .= ", exchange_serial_number = ".(empty($this->exchange_serial_number) ? "NULL" : "'".$this->db->escape($this->exchange_serial_number)."'");
+		$sql .= ", fk_expedition = ".(empty($this->fk_expedition) ? "NULL" : ((int) $this->fk_expedition));
+		$sql .= ", label = ".(empty($this->label) ? "NULL" : "'".$this->db->escape($this->label)."'");
+		$sql .= ", date_return = ".(empty($this->date_return) ? "NULL" : "'".$this->db->idate($this->date_return)."'");
 		$sql .= ", note_private = ".(empty($this->note_private) ? "NULL" : "'".$this->db->escape($this->note_private)."'");
 		$sql .= ", note_public = ".(empty($this->note_public) ? "NULL" : "'".$this->db->escape($this->note_public)."'");
 		$sql .= ", fk_user_modif = ".((int) $user->id);
@@ -565,6 +584,7 @@ class ReturnRequest extends CommonObject
 
 	/**
 	 * Receive items: APPROVED -> RECEIVED
+	 * Creates stock movements to add returned qty into warehouse.
 	 *
 	 * @param  User $user      User that marks as received
 	 * @param  int  $notrigger 0=launch triggers, 1=disable triggers
@@ -572,6 +592,8 @@ class ReturnRequest extends CommonObject
 	 */
 	public function receive($user, $notrigger = 0)
 	{
+		global $langs;
+
 		if ($this->status != self::STATUS_APPROVED) {
 			$this->error = 'ErrorReturnRequestNotApproved';
 			return -1;
@@ -595,6 +617,43 @@ class ReturnRequest extends CommonObject
 		if (!$error) {
 			$this->status = self::STATUS_RECEIVED;
 			$this->date_received = $now;
+		}
+
+		// Create stock movements for each line
+		if (!$error && isModEnabled('stock')) {
+			require_once DOL_DOCUMENT_ROOT.'/product/stock/class/mouvementstock.class.php';
+
+			if (empty($this->lines)) {
+				$this->fetchLines();
+			}
+
+			$langs->load('returnmgmt@returnmgmt');
+
+			foreach ($this->lines as $line) {
+				if ($line->fk_product > 0 && $line->qty > 0) {
+					$warehouse_id = $line->fk_entrepot > 0 ? $line->fk_entrepot : $this->fk_warehouse;
+					if ($warehouse_id > 0) {
+						$mouv = new MouvementStock($this->db);
+						$mouv->setOrigin($this->element, $this->id);
+						$result = $mouv->reception(
+							$user,
+							$line->fk_product,
+							$warehouse_id,
+							$line->qty,
+							0,
+							$langs->trans('ReturnValidated', $this->ref),
+							'',
+							'',
+							$line->serial_number ? $line->serial_number : ''
+						);
+						if ($result < 0) {
+							$error++;
+							$this->errors[] = $mouv->error;
+							break;
+						}
+					}
+				}
+			}
 		}
 
 		if (!$error && !$notrigger) {
@@ -824,15 +883,20 @@ class ReturnRequest extends CommonObject
 	/**
 	 * Add a line to the return request
 	 *
-	 * @param  int    $fk_product    Product ID
-	 * @param  double $qty           Quantity
-	 * @param  string $description   Description
-	 * @param  string $serial_number Serial number
-	 * @param  double $subprice      Unit price
-	 * @param  double $tva_tx        Tax rate
-	 * @return int                   >0 if OK, <0 if KO
+	 * @param  int    $fk_product       Product ID
+	 * @param  double $qty              Quantity
+	 * @param  string $description      Description
+	 * @param  string $serial_number    Serial number
+	 * @param  double $subprice         Unit price
+	 * @param  double $tva_tx           Tax rate
+	 * @param  int    $fk_expedition    Source shipment ID
+	 * @param  int    $fk_expeditiondet Source shipment line ID
+	 * @param  int    $fk_commandedet   Source order line ID
+	 * @param  int    $fk_entrepot      Warehouse ID
+	 * @param  string $comment          Line comment
+	 * @return int                      >0 if OK, <0 if KO
 	 */
-	public function addLine($fk_product, $qty, $description = '', $serial_number = '', $subprice = 0, $tva_tx = 0)
+	public function addLine($fk_product, $qty, $description = '', $serial_number = '', $subprice = 0, $tva_tx = 0, $fk_expedition = 0, $fk_expeditiondet = 0, $fk_commandedet = 0, $fk_entrepot = 0, $comment = '')
 	{
 		$line = new ReturnRequestLine($this->db);
 		$line->fk_returnmgmt_return = $this->id;
@@ -843,6 +907,11 @@ class ReturnRequest extends CommonObject
 		$line->subprice = $subprice;
 		$line->total_ht = $subprice * $qty;
 		$line->tva_tx = $tva_tx;
+		$line->fk_expedition = $fk_expedition;
+		$line->fk_expeditiondet = $fk_expeditiondet;
+		$line->fk_commandedet = $fk_commandedet;
+		$line->fk_entrepot = $fk_entrepot;
+		$line->comment = $comment;
 
 		$result = $line->insert();
 		if ($result > 0) {
@@ -893,5 +962,48 @@ class ReturnRequest extends CommonObject
 		$line = new ReturnRequestLine($this->db);
 		$line->id = $lineid;
 		return $line->delete();
+	}
+
+	/**
+	 * Get the linked invoice by traversing element_element:
+	 * expedition → commande → facture
+	 *
+	 * @return int Invoice ID or 0 if not found
+	 */
+	public function getLinkedInvoice()
+	{
+		if (empty($this->fk_expedition)) {
+			return 0;
+		}
+
+		// Step 1: expedition → commande (sourcetype='commande', targettype='shipping')
+		$sql = "SELECT el.fk_source AS fk_commande";
+		$sql .= " FROM ".MAIN_DB_PREFIX."element_element el";
+		$sql .= " WHERE el.fk_target = ".((int) $this->fk_expedition);
+		$sql .= " AND el.targettype = 'shipping'";
+		$sql .= " AND el.sourcetype = 'commande'";
+		$sql .= " LIMIT 1";
+
+		$resql = $this->db->query($sql);
+		if (!$resql || !$this->db->num_rows($resql)) {
+			return 0;
+		}
+		$obj = $this->db->fetch_object($resql);
+		$fk_commande = (int) $obj->fk_commande;
+
+		// Step 2: commande → facture (sourcetype='commande', targettype='facture')
+		$sql2 = "SELECT el.fk_target AS fk_facture";
+		$sql2 .= " FROM ".MAIN_DB_PREFIX."element_element el";
+		$sql2 .= " WHERE el.fk_source = ".((int) $fk_commande);
+		$sql2 .= " AND el.sourcetype = 'commande'";
+		$sql2 .= " AND el.targettype = 'facture'";
+		$sql2 .= " LIMIT 1";
+
+		$resql2 = $this->db->query($sql2);
+		if (!$resql2 || !$this->db->num_rows($resql2)) {
+			return 0;
+		}
+		$obj2 = $this->db->fetch_object($resql2);
+		return (int) $obj2->fk_facture;
 	}
 }

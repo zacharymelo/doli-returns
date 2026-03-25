@@ -22,14 +22,14 @@ class modReturnmgmt extends DolibarrModules
 		$this->module_position = '90';
 		$this->name = preg_replace('/^mod/i', '', get_class($this));
 		$this->description = 'Product return management with refund, exchange, repair and rejection workflows';
-		$this->version = '1.1.2';
+		$this->version = '1.2.0';
 		$this->const_name = 'MAIN_MODULE_'.strtoupper($this->name);
 		$this->picto = 'technic';
 
 		$this->module_parts = array(
 			'triggers' => 1,
 			'hooks' => array(
-				'data' => array('elementproperties', 'productcard', 'commonobject'),
+				'data' => array('elementproperties', 'productcard', 'commonobject', 'expeditioncard'),
 				'entity' => '0',
 			),
 		);

@@ -148,4 +148,37 @@ class ActionsReturnmgmt
 
 		return 0;
 	}
+
+	/**
+	 * Add "Create Return" button on shipment (expedition) card
+	 * Hook context: expeditioncard (confirmed at htdocs/expedition/card.php:2883)
+	 *
+	 * @param  array  $parameters Hook parameters
+	 * @param  object $object     Expedition object
+	 * @param  string $action     Current action
+	 * @param  object $hookmanager Hook manager
+	 * @return int                0=OK
+	 */
+	public function addMoreActionsButtons($parameters, &$object, &$action, $hookmanager)
+	{
+		global $langs, $user;
+
+		if (!isModEnabled('returnmgmt')) {
+			return 0;
+		}
+
+		// Only on expedition card, when shipment is validated or later
+		if (!isset($object->element) || $object->element !== 'shipping') {
+			return 0;
+		}
+
+		if ($object->statut >= 1 && $user->hasRight('returnmgmt', 'returnrequest', 'write')) {
+			$langs->load('returnmgmt@returnmgmt');
+			$url = dol_buildpath('/returnmgmt/returnrequest_card.php', 1);
+			$url .= '?action=create&fk_expedition='.$object->id;
+			print '<a class="butAction" href="'.$url.'">'.$langs->trans('CreateReturnFromShipment').'</a>';
+		}
+
+		return 0;
+	}
 }
