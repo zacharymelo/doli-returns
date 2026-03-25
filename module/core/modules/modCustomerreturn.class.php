@@ -22,7 +22,7 @@ class modCustomerreturn extends DolibarrModules
 		$this->module_position = '90';
 		$this->name = preg_replace('/^mod/i', '', get_class($this));
 		$this->description = 'Customer merchandise return management with stock movement tracking and credit note generation';
-		$this->version = '2.0.4';
+		$this->version = '2.0.5';
 		$this->const_name = 'MAIN_MODULE_'.strtoupper($this->name);
 		$this->picto = 'dollyrevert';
 
@@ -100,14 +100,14 @@ class modCustomerreturn extends DolibarrModules
 		$this->menu = array();
 		$r = 0;
 
-		// Left: Customer Returns heading (under Products > after Receptions)
+		// Heading: Customer Returns (level 0 under Products, same level as Shipments/Receptions)
 		$this->menu[$r++] = array(
 			'fk_menu'  => 'fk_mainmenu=products',
 			'type'     => 'left',
 			'titre'    => 'CustomerReturns',
 			'prefix'   => img_picto('', 'dollyrevert', 'class="paddingright pictofixedwidth"'),
 			'mainmenu' => 'products',
-			'leftmenu' => 'customerreturn_list',
+			'leftmenu' => 'customerreturns',
 			'url'      => '/customerreturn/customerreturn_list.php',
 			'langs'    => 'customerreturn@customerreturn',
 			'position' => 2700,
@@ -115,11 +115,12 @@ class modCustomerreturn extends DolibarrModules
 			'perms'    => '$user->hasRight("customerreturn", "customerreturn", "read")',
 			'target'   => '',
 			'user'     => 0,
+			'level'    => 0,
 		);
 
-		// Left: New Customer Return (child of list)
+		// Child: New Customer Return
 		$this->menu[$r++] = array(
-			'fk_menu'  => 'fk_mainmenu=products,fk_leftmenu=customerreturn_list',
+			'fk_menu'  => 'fk_mainmenu=products,fk_leftmenu=customerreturns',
 			'type'     => 'left',
 			'titre'    => 'NewCustomerReturn',
 			'mainmenu' => 'products',
@@ -129,6 +130,22 @@ class modCustomerreturn extends DolibarrModules
 			'position' => 2701,
 			'enabled'  => 'isModEnabled("customerreturn")',
 			'perms'    => '$user->hasRight("customerreturn", "customerreturn", "write")',
+			'target'   => '',
+			'user'     => 0,
+		);
+
+		// Child: List
+		$this->menu[$r++] = array(
+			'fk_menu'  => 'fk_mainmenu=products,fk_leftmenu=customerreturns',
+			'type'     => 'left',
+			'titre'    => 'List',
+			'mainmenu' => 'products',
+			'leftmenu' => 'customerreturn_listall',
+			'url'      => '/customerreturn/customerreturn_list.php',
+			'langs'    => 'customerreturn@customerreturn',
+			'position' => 2702,
+			'enabled'  => 'isModEnabled("customerreturn")',
+			'perms'    => '$user->hasRight("customerreturn", "customerreturn", "read")',
 			'target'   => '',
 			'user'     => 0,
 		);
