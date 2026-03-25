@@ -1,0 +1,131 @@
+# Module
+Module520000Name = ReturnMgmt
+Module520000Desc = Product return management with refund, exchange, repair and rejection workflows
+
+# Menu
+Returns = Returns
+ReturnRequestList = Return Requests
+NewReturnRequest = New Return Request
+
+# Object
+ReturnRequest = Return Request
+ReturnRequests = Return Requests
+LinkToReturnRequest = Link to Return Request
+
+# Status
+StatusDraft = Draft
+StatusPending = Pending Approval
+StatusApproved = Approved
+StatusReceived = Received
+StatusProcessing = Processing
+StatusCompleted = Completed
+StatusRejected = Rejected
+Draft = Draft
+Pending = Pending
+Approved = Approved
+Received = Received
+Processing = Processing
+Completed = Completed
+Rejected = Rejected
+
+# Return reasons
+ReturnReason = Return Reason
+ReasonDefective = Defective
+ReasonWrongItem = Wrong Item
+ReasonNotAsDescribed = Not As Described
+ReasonBuyerRemorse = Buyer Remorse
+ReasonDamagedInShipping = Damaged In Shipping
+ReasonOther = Other
+
+# Resolution types
+ResolutionType = Resolution Type
+ResolutionRefund = Refund
+ResolutionExchange = Exchange
+ResolutionRepair = Repair
+ResolutionReject = Reject
+
+# Condition
+ConditionOnReceipt = Condition On Receipt
+ConditionGood = Good
+ConditionFair = Fair
+ConditionPoor = Poor
+ConditionScrap = Scrap
+
+# Fields
+SerialNumber = Serial Number
+ReturnTracking = Return Tracking
+DateReceived = Date Received
+DateResolved = Date Resolved
+AssignedTo = Assigned To
+RefundAmount = Refund Amount
+ExchangeProduct = Exchange Product
+ExchangeSerialNumber = Exchange Serial Number
+Warehouse = Warehouse
+Customer = Customer
+Product = Product
+
+# Actions
+Submit = Submit
+Approve = Approve
+Reject = Reject
+Receive = Receive
+Process = Process
+Complete = Complete
+
+# Confirmations
+ValidateReturnRequest = Submit Return Request
+ConfirmValidateReturnRequest = Are you sure you want to submit this return request for approval?
+ApproveReturnRequest = Approve Return Request
+ConfirmApproveReturnRequest = Are you sure you want to approve this return request?
+RejectReturnRequest = Reject Return Request
+ConfirmRejectReturnRequest = Are you sure you want to reject this return request?
+ReceiveReturn = Receive Return
+ConfirmReceiveReturn = Mark the returned items as received?
+ProcessReturn = Process Return
+ConfirmProcessReturn = Begin processing this return?
+CompleteReturn = Complete Return
+ConfirmCompleteReturn = Mark this return as completed?
+DeleteReturnRequest = Delete Return Request
+ConfirmDeleteReturnRequest = Are you sure you want to delete this return request?
+
+# Errors
+ErrorReturnRequestNotDraft = Return request is not in draft status
+ErrorReturnRequestNotPending = Return request is not pending approval
+ErrorReturnRequestNotApproved = Return request is not approved
+ErrorReturnRequestNotReceived = Return request has not been received
+ErrorReturnRequestNotProcessing = Return request is not being processed
+ErrorFailedToGetNextRef = Failed to generate next reference number
+
+# Quick filters
+MyOpen = My Open
+PendingApproval = Pending Approval
+AwaitingReceipt = Awaiting Receipt
+
+# Admin setup
+ReturnMgmtSetup = ReturnMgmt Setup
+ReturnWindowDays = Return Window (Days)
+Days = days
+DefaultWarehouse = Default Receiving Warehouse
+AutoApproveReturns = Auto-Approve Returns
+RequireTrackingBeforeReceive = Require Tracking Number Before Receive
+NotifyCustomerOnApprove = Notify Customer When Approved
+NotifyCustomerOnComplete = Notify Customer When Completed
+NumberingModel = Numbering Model
+
+# Shipment line picker
+SelectCustomerFirst = Select Customer First
+Shipment = Shipment
+Order = Order
+QtyShipped = Qty Shipped
+ReturnQty = Return Qty
+SelectItemsToReturn = Select
+NoShipmentsFound = No shipments found for this customer
+SelectAtLeastOneLine = Please select at least one item to return
+Description = Description
+
+# Permissions
+Permission520001a = Read return requests
+Permission520002a = Create/edit return requests
+Permission520003a = Delete return requests
+Permission520004a = Approve or reject return requests
+Permission520005a = Complete/close return requests

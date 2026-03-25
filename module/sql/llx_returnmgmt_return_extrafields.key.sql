@@ -1,0 +1,1 @@
+ALTER TABLE llx_returnmgmt_return_extrafields ADD INDEX idx_returnmgmt_return_extrafields_fk_object (fk_object);

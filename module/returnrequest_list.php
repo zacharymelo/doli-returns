@@ -1,0 +1,276 @@
+<?php
+/* Copyright (C) 2026 Zachary Melo
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+$res = 0;
+if (!$res && file_exists("../main.inc.php")) { $res = @include "../main.inc.php"; }
+if (!$res && file_exists("../../main.inc.php")) { $res = @include "../../main.inc.php"; }
+if (!$res && file_exists("../../../main.inc.php")) { $res = @include "../../../main.inc.php"; }
+if (!$res) { die("Include of main fails"); }
+
+require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
+dol_include_once('/returnmgmt/class/returnrequest.class.php');
+dol_include_once('/returnmgmt/lib/returnmgmt.lib.php');
+
+$langs->loadLangs(array('returnmgmt@returnmgmt', 'companies', 'products', 'other'));
+
+// Permissions
+if (!$user->hasRight('returnmgmt', 'returnrequest', 'read')) {
+	accessforbidden();
+}
+
+// Parameters
+$action = GETPOST('action', 'aZ09');
+$massaction = GETPOST('massaction', 'alpha');
+$sortfield = GETPOST('sortfield', 'aZ09comma');
+$sortorder = GETPOST('sortorder', 'aZ09comma');
+$page = GETPOSTINT('page');
+$limit = GETPOSTINT('limit') ? GETPOSTINT('limit') : $conf->liste_limit;
+$offset = $limit * $page;
+
+if (empty($sortfield)) { $sortfield = 't.date_creation'; }
+if (empty($sortorder)) { $sortorder = 'DESC'; }
+
+// Search filters
+$search_ref             = GETPOST('search_ref', 'alpha');
+$search_company         = GETPOST('search_company', 'alpha');
+$search_serial          = GETPOST('search_serial', 'alpha');
+$search_status          = GETPOST('search_status', 'intcomma');
+$search_reason          = GETPOST('search_reason', 'alpha');
+$search_resolution      = GETPOST('search_resolution', 'alpha');
+$search_user_assigned   = GETPOSTINT('search_user_assigned');
+
+// Quick filter presets
+$preset = GETPOST('preset', 'alpha');
+if ($preset == 'myopen') {
+	$search_user_assigned = $user->id;
+	$search_status = '0,1,2,3,4';
+} elseif ($preset == 'pending') {
+	$search_status = (string) ReturnRequest::STATUS_PENDING;
+} elseif ($preset == 'awaiting') {
+	$search_status = (string) ReturnRequest::STATUS_APPROVED;
+}
+
+// Reset search
+if (GETPOST('button_removefilter_x', 'alpha') || GETPOST('button_removefilter.x', 'alpha') || GETPOST('button_removefilter', 'alpha')) {
+	$search_ref = '';
+	$search_company = '';
+	$search_serial = '';
+	$search_status = '';
+	$search_reason = '';
+	$search_resolution = '';
+	$search_user_assigned = 0;
+}
+
+$form = new Form($db);
+
+// Build SQL
+$sql = "SELECT t.rowid, t.ref, t.fk_soc, t.fk_product, t.serial_number";
+$sql .= ", t.return_reason, t.resolution_type, t.status";
+$sql .= ", t.date_creation, t.date_received, t.fk_user_assigned";
+$sql .= ", s.nom as company_name";
+$sql .= " FROM ".MAIN_DB_PREFIX."returnmgmt_return as t";
+$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON t.fk_soc = s.rowid";
+$sql .= " WHERE t.entity IN (".getEntity('returnrequest').")";
+
+if (!empty($search_ref)) {
+	$sql .= natural_search('t.ref', $search_ref);
+}
+if (!empty($search_company)) {
+	$sql .= natural_search('s.nom', $search_company);
+}
+if (!empty($search_serial)) {
+	$sql .= natural_search('t.serial_number', $search_serial);
+}
+if ($search_status !== '' && $search_status !== '-1') {
+	if (strpos($search_status, ',') !== false) {
+		$statuses = array_map('intval', explode(',', $search_status));
+		$sql .= " AND t.status IN (".implode(',', $statuses).")";
+	} else {
+		$sql .= " AND t.status = ".((int) $search_status);
+	}
+}
+if (!empty($search_reason)) {
+	$sql .= " AND t.return_reason = '".$db->escape($search_reason)."'";
+}
+if (!empty($search_resolution)) {
+	$sql .= " AND t.resolution_type = '".$db->escape($search_resolution)."'";
+}
+if ($search_user_assigned > 0) {
+	$sql .= " AND t.fk_user_assigned = ".((int) $search_user_assigned);
+}
+
+// Count total
+$sqlcount = preg_replace('/^SELECT.*FROM/s', 'SELECT COUNT(t.rowid) as total FROM', $sql);
+$resqlcount = $db->query($sqlcount);
+$nbtotalofrecords = 0;
+if ($resqlcount) {
+	$objcount = $db->fetch_object($resqlcount);
+	$nbtotalofrecords = (int) $objcount->total;
+}
+
+$sql .= $db->order($sortfield, $sortorder);
+$sql .= $db->plimit($limit + 1, $offset);
+
+$resql = $db->query($sql);
+if (!$resql) {
+	dol_print_error($db);
+	exit;
+}
+$num = $db->num_rows($resql);
+
+/*
+ * VIEW
+ */
+
+llxHeader('', $langs->trans('ReturnRequestList'));
+
+$param = '';
+if (!empty($search_ref))           { $param .= '&search_ref='.urlencode($search_ref); }
+if (!empty($search_company))       { $param .= '&search_company='.urlencode($search_company); }
+if (!empty($search_serial))        { $param .= '&search_serial='.urlencode($search_serial); }
+if ($search_status !== '')         { $param .= '&search_status='.urlencode($search_status); }
+if (!empty($search_reason))        { $param .= '&search_reason='.urlencode($search_reason); }
+if (!empty($search_resolution))    { $param .= '&search_resolution='.urlencode($search_resolution); }
+if ($search_user_assigned > 0)     { $param .= '&search_user_assigned='.$search_user_assigned; }
+
+$newcardbutton = '';
+if ($user->hasRight('returnmgmt', 'returnrequest', 'write')) {
+	$newcardbutton .= dolGetButtonTitle($langs->trans('NewReturnRequest'), '', 'fa fa-plus-circle', dol_buildpath('/returnmgmt/returnrequest_card.php', 1).'?action=create');
+}
+
+// Quick filter buttons
+$quickfilters = '<div class="inline-block marginbottomonly">';
+$quickfilters .= '<a class="butAction butActionSmall" href="'.$_SERVER['PHP_SELF'].'?preset=myopen">'.$langs->trans('MyOpen').'</a> ';
+$quickfilters .= '<a class="butAction butActionSmall" href="'.$_SERVER['PHP_SELF'].'?preset=pending">'.$langs->trans('PendingApproval').'</a> ';
+$quickfilters .= '<a class="butAction butActionSmall" href="'.$_SERVER['PHP_SELF'].'?preset=awaiting">'.$langs->trans('AwaitingReceipt').'</a>';
+$quickfilters .= '</div>';
+
+print $quickfilters;
+
+print_barre_liste(
+	$langs->trans('ReturnRequestList'),
+	$page,
+	$_SERVER['PHP_SELF'],
+	$param,
+	$sortfield,
+	$sortorder,
+	'',
+	$num,
+	$nbtotalofrecords,
+	'technic',
+	0,
+	$newcardbutton,
+	'',
+	$limit
+);
+
+print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
+print '<input type="hidden" name="token" value="'.newToken().'">';
+print '<input type="hidden" name="action" value="list">';
+print '<input type="hidden" name="sortfield" value="'.$sortfield.'">';
+print '<input type="hidden" name="sortorder" value="'.$sortorder.'">';
+print '<input type="hidden" name="page" value="'.$page.'">';
+
+print '<table class="noborder centpercent">';
+
+// Header row
+print '<tr class="liste_titre">';
+print_liste_field_titre('Ref',            $_SERVER['PHP_SELF'], 't.ref',            '', $param, '', $sortfield, $sortorder);
+print_liste_field_titre('Company',        $_SERVER['PHP_SELF'], 's.nom',            '', $param, '', $sortfield, $sortorder);
+print_liste_field_titre('SerialNumber',   $_SERVER['PHP_SELF'], 't.serial_number',  '', $param, '', $sortfield, $sortorder);
+print_liste_field_titre('ReturnReason',   $_SERVER['PHP_SELF'], 't.return_reason',  '', $param, '', $sortfield, $sortorder);
+print_liste_field_titre('ResolutionType', $_SERVER['PHP_SELF'], 't.resolution_type','', $param, '', $sortfield, $sortorder);
+print_liste_field_titre('Status',         $_SERVER['PHP_SELF'], 't.status',         '', $param, '', $sortfield, $sortorder, 'center ');
+print_liste_field_titre('DateCreation',   $_SERVER['PHP_SELF'], 't.date_creation',  '', $param, '', $sortfield, $sortorder, 'center ');
+print '</tr>';
+
+// Search row
+print '<tr class="liste_titre_filter">';
+print '<td><input type="text" name="search_ref" class="flat maxwidth100" value="'.dol_escape_htmltag($search_ref).'"></td>';
+print '<td><input type="text" name="search_company" class="flat maxwidth150" value="'.dol_escape_htmltag($search_company).'"></td>';
+print '<td><input type="text" name="search_serial" class="flat maxwidth100" value="'.dol_escape_htmltag($search_serial).'"></td>';
+print '<td>'.$form->selectarray('search_reason', returnrequest_reason_types(), $search_reason, 1, 0, 0, '', 0, 0, 0, '', 'maxwidth150').'</td>';
+print '<td>'.$form->selectarray('search_resolution', returnrequest_resolution_types(), $search_resolution, 1, 0, 0, '', 0, 0, 0, '', 'maxwidth150').'</td>';
+$statusarray = array(
+	ReturnRequest::STATUS_DRAFT => $langs->trans('Draft'),
+	ReturnRequest::STATUS_PENDING => $langs->trans('Pending'),
+	ReturnRequest::STATUS_APPROVED => $langs->trans('Approved'),
+	ReturnRequest::STATUS_RECEIVED => $langs->trans('Received'),
+	ReturnRequest::STATUS_PROCESSING => $langs->trans('Processing'),
+	ReturnRequest::STATUS_COMPLETED => $langs->trans('Completed'),
+	ReturnRequest::STATUS_REJECTED => $langs->trans('Rejected'),
+);
+print '<td class="center">'.$form->selectarray('search_status', $statusarray, $search_status, 1, 0, 0, '', 0, 0, 0, '', 'maxwidth100 center').'</td>';
+print '<td class="center"></td>';
+print '</tr>';
+
+// Data rows
+$object_tmp = new ReturnRequest($db);
+$i = 0;
+while ($i < min($num, $limit)) {
+	$obj = $db->fetch_object($resql);
+	if (!$obj) {
+		break;
+	}
+
+	$object_tmp->id = $obj->rowid;
+	$object_tmp->ref = $obj->ref;
+	$object_tmp->status = $obj->status;
+
+	print '<tr class="oddeven">';
+
+	// Ref
+	print '<td>'.$object_tmp->getNomUrl(1).'</td>';
+
+	// Company
+	if ($obj->fk_soc > 0) {
+		$soc = new Societe($db);
+		$soc->id = $obj->fk_soc;
+		$soc->name = $obj->company_name;
+		print '<td>'.$soc->getNomUrl(1).'</td>';
+	} else {
+		print '<td></td>';
+	}
+
+	// Serial
+	print '<td>'.dol_escape_htmltag($obj->serial_number).'</td>';
+
+	// Reason
+	print '<td>'.returnrequest_reason_label($obj->return_reason).'</td>';
+
+	// Resolution
+	print '<td>'.returnrequest_resolution_label($obj->resolution_type).'</td>';
+
+	// Status
+	print '<td class="center">'.$object_tmp->getLibStatut(5).'</td>';
+
+	// Date creation
+	print '<td class="center">'.dol_print_date($db->jdate($obj->date_creation), 'day').'</td>';
+
+	print '</tr>';
+	$i++;
+}
+
+if ($num == 0) {
+	print '<tr><td colspan="7"><span class="opacitymedium">'.$langs->trans('NoRecordFound').'</span></td></tr>';
+}
+
+print '</table>';
+
+print '<div class="tabsAction">';
+print '<input type="submit" name="button_search" class="button" value="'.$langs->trans('Search').'">';
+print '<input type="submit" name="button_removefilter" class="button" value="'.$langs->trans('RemoveFilter').'">';
+print '</div>';
+
+print '</form>';
+
+llxFooter();
+$db->close();
