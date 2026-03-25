@@ -13,6 +13,7 @@ require_once DOL_DOCUMENT_ROOT.'/custom/customerreturn/class/customerreturnline.
 class CustomerReturn extends CommonObject
 {
 	public $TRIGGER_PREFIX = 'CUSTOMERRETURN';
+	public $module = 'customerreturn';
 	public $element = 'customerreturn';
 	public $table_element = 'customer_return';
 	public $picto = 'dollyrevert';
@@ -660,8 +661,8 @@ class CustomerReturn extends CommonObject
 			return '';
 		}
 
-		$labelShort = $langs->transnoentitiesaliases($statusLabels[$status]['short']);
-		$labelLong = $langs->transnoentitiesaliases($statusLabels[$status]['long']);
+		$labelShort = $langs->transnoentitiesnoconv($statusLabels[$status]['short']);
+		$labelLong = $langs->transnoentitiesnoconv($statusLabels[$status]['long']);
 		$statusType = $statusLabels[$status]['type'];
 
 		return dolGetStatus($labelLong, $labelShort, '', $statusType, $mode);
