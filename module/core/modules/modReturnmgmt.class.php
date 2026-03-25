@@ -22,7 +22,7 @@ class modReturnmgmt extends DolibarrModules
 		$this->module_position = '90';
 		$this->name = preg_replace('/^mod/i', '', get_class($this));
 		$this->description = 'Product return management with refund, exchange, repair and rejection workflows';
-		$this->version = '1.1.0';
+		$this->version = '1.1.1';
 		$this->const_name = 'MAIN_MODULE_'.strtoupper($this->name);
 		$this->picto = 'technic';
 
@@ -157,11 +157,21 @@ class modReturnmgmt extends DolibarrModules
 		if ($result < 0) {
 			return -1;
 		}
-		return $this->_init(array(), $options);
+
+		// Clean old menus before re-inserting to avoid duplicates on re-enable
+		$sql = array(
+			"DELETE FROM ".MAIN_DB_PREFIX."menu WHERE module = 'returnmgmt'",
+		);
+
+		return $this->_init($sql, $options);
 	}
 
 	public function remove($options = '')
 	{
-		return $this->_init(array(), $options);
+		$sql = array(
+			"DELETE FROM ".MAIN_DB_PREFIX."menu WHERE module = 'returnmgmt'",
+		);
+
+		return $this->_init($sql, $options);
 	}
 }
