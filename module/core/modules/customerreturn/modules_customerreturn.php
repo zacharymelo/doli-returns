@@ -10,7 +10,7 @@
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonnumrefgenerator.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/commondocgenerator.class.php';
 
-abstract class ModeleNumRefReturnmgmt extends CommonNumRefGenerator
+abstract class ModeleNumRefCustomerreturn extends CommonNumRefGenerator
 {
 	/**
 	 * Return next value
@@ -29,7 +29,7 @@ abstract class ModeleNumRefReturnmgmt extends CommonNumRefGenerator
 	abstract public function getExample();
 }
 
-abstract class ModelePDFReturnmgmt extends CommonDocGenerator
+abstract class ModelePDFCustomerreturn extends CommonDocGenerator
 {
 	/**
 	 * Return list of active generation modules
@@ -40,6 +40,6 @@ abstract class ModelePDFReturnmgmt extends CommonDocGenerator
 	 */
 	public static function liste_modeles($db, $maxfilename = 0)
 	{
-		return parent::liste_modeles_genx($db, $maxfilename, array(), 'returnmgmt');
+		return parent::liste_modeles_genx($db, $maxfilename, array(), 'customerreturn');
 	}
 }

@@ -9,13 +9,13 @@
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobjectline.class.php';
 
-class ReturnRequestLine extends CommonObjectLine
+class CustomerReturnLine extends CommonObjectLine
 {
-	public $element = 'returnrequestline';
-	public $table_element = 'returnmgmt_return_line';
-	public $fk_element = 'fk_returnmgmt_return';
+	public $element = 'customerreturnline';
+	public $table_element = 'customer_return_line';
+	public $fk_element = 'fk_customer_return';
 
-	public $fk_returnmgmt_return;
+	public $fk_customer_return;
 	public $fk_product;
 	public $description;
 	public $qty;
@@ -47,13 +47,13 @@ class ReturnRequestLine extends CommonObjectLine
 	 */
 	public function insert()
 	{
-		$sql = "INSERT INTO ".MAIN_DB_PREFIX."returnmgmt_return_line (";
-		$sql .= "fk_returnmgmt_return, fk_product, description, qty";
+		$sql = "INSERT INTO ".MAIN_DB_PREFIX."customer_return_line (";
+		$sql .= "fk_customer_return, fk_product, description, qty";
 		$sql .= ", serial_number, fk_expedition, fk_expeditiondet, fk_commandedet";
 		$sql .= ", fk_entrepot, comment";
 		$sql .= ", subprice, total_ht, tva_tx, rang, date_creation";
 		$sql .= ") VALUES (";
-		$sql .= ((int) $this->fk_returnmgmt_return);
+		$sql .= ((int) $this->fk_customer_return);
 		$sql .= ", ".(empty($this->fk_product) ? "NULL" : ((int) $this->fk_product));
 		$sql .= ", ".(empty($this->description) ? "NULL" : "'".$this->db->escape($this->description)."'");
 		$sql .= ", ".((float) $this->qty);
@@ -72,7 +72,7 @@ class ReturnRequestLine extends CommonObjectLine
 
 		$resql = $this->db->query($sql);
 		if ($resql) {
-			$this->id = $this->db->last_insert_id(MAIN_DB_PREFIX."returnmgmt_return_line");
+			$this->id = $this->db->last_insert_id(MAIN_DB_PREFIX."customer_return_line");
 			return $this->id;
 		} else {
 			$this->error = $this->db->lasterror();
@@ -87,7 +87,7 @@ class ReturnRequestLine extends CommonObjectLine
 	 */
 	public function update()
 	{
-		$sql = "UPDATE ".MAIN_DB_PREFIX."returnmgmt_return_line SET";
+		$sql = "UPDATE ".MAIN_DB_PREFIX."customer_return_line SET";
 		$sql .= " fk_product = ".(empty($this->fk_product) ? "NULL" : ((int) $this->fk_product));
 		$sql .= ", description = ".(empty($this->description) ? "NULL" : "'".$this->db->escape($this->description)."'");
 		$sql .= ", qty = ".((float) $this->qty);
@@ -116,7 +116,7 @@ class ReturnRequestLine extends CommonObjectLine
 	 */
 	public function delete()
 	{
-		$sql = "DELETE FROM ".MAIN_DB_PREFIX."returnmgmt_return_line";
+		$sql = "DELETE FROM ".MAIN_DB_PREFIX."customer_return_line";
 		$sql .= " WHERE rowid = ".((int) $this->id);
 
 		$resql = $this->db->query($sql);

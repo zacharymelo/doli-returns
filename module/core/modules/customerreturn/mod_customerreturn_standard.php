@@ -7,13 +7,13 @@
  * (at your option) any later version.
  */
 
-require_once DOL_DOCUMENT_ROOT.'/custom/returnmgmt/core/modules/returnmgmt/modules_returnmgmt.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/customerreturn/core/modules/customerreturn/modules_customerreturn.php';
 
-class mod_returnmgmt_standard extends ModeleNumRefReturnmgmt
+class mod_customerreturn_standard extends ModeleNumRefCustomerreturn
 {
 	public $version = '1.0.0';
 	public $name = 'standard';
-	public $prefix = 'RET';
+	public $prefix = 'RT';
 
 	/**
 	 * Return an example of numbering
@@ -22,7 +22,7 @@ class mod_returnmgmt_standard extends ModeleNumRefReturnmgmt
 	 */
 	public function getExample()
 	{
-		return $this->prefix.'-'.dol_print_date(dol_now(), '%Y%m%d').'-0001';
+		return $this->prefix.'-'.dol_print_date(dol_now(), '%y%m').'-0001';
 	}
 
 	/**
@@ -37,13 +37,13 @@ class mod_returnmgmt_standard extends ModeleNumRefReturnmgmt
 		global $db, $conf;
 
 		$date = (!empty($object->date_creation) ? $object->date_creation : dol_now());
-		$ymd = dol_print_date($date, '%Y%m%d');
+		$ym = dol_print_date($date, '%y%m');
 
-		$posidx = strlen($this->prefix) + 10; // prefix + dash + 8-digit date + dash
+		$posidx = strlen($this->prefix) + 6; // prefix + dash + 4-digit YYMM + dash
 
 		$sql = "SELECT MAX(CAST(SUBSTRING(ref FROM ".$posidx.") AS SIGNED)) as max_num";
-		$sql .= " FROM ".MAIN_DB_PREFIX."returnmgmt_return";
-		$sql .= " WHERE ref LIKE '".$db->escape($this->prefix)."-".$ymd."-%'";
+		$sql .= " FROM ".MAIN_DB_PREFIX."customer_return";
+		$sql .= " WHERE ref LIKE '".$db->escape($this->prefix)."-".$ym."-%'";
 		$sql .= " AND entity = ".((int) $conf->entity);
 
 		$max = 0;
@@ -56,6 +56,6 @@ class mod_returnmgmt_standard extends ModeleNumRefReturnmgmt
 			$db->free($resql);
 		}
 
-		return $this->prefix.'-'.$ymd.'-'.sprintf('%04d', $max + 1);
+		return $this->prefix.'-'.$ym.'-'.sprintf('%04d', $max + 1);
 	}
 }

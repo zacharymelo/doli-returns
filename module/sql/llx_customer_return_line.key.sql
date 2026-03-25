@@ -1,0 +1,3 @@
+ALTER TABLE llx_customer_return_line ADD INDEX idx_customer_return_line_fk (fk_customer_return);
+ALTER TABLE llx_customer_return_line ADD INDEX idx_customer_return_line_fk_product (fk_product);
+ALTER TABLE llx_customer_return_line ADD INDEX idx_customer_return_line_fk_expeditiondet (fk_expeditiondet);

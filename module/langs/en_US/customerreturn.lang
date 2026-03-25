@@ -1,0 +1,96 @@
+# Module
+Module510100Name = CustomerReturn
+Module510100Desc = Customer merchandise return management with stock movement tracking and credit note generation
+
+# Menu
+Returns = Returns
+CustomerReturnList = Customer Returns
+NewCustomerReturn = New Customer Return
+
+# Object
+CustomerReturn = Customer Return
+CustomerReturns = Customer Returns
+LinkToCustomerReturn = Link to Customer Return
+
+# Status
+StatusDraft = Draft
+StatusValidated = Validated
+StatusClosed = Closed
+Draft = Draft
+Validated = Validated
+Closed = Closed
+
+# Fields
+Warehouse = Warehouse
+Customer = Customer
+Product = Product
+SerialNumber = Serial Number
+
+# Actions
+Validate = Validate
+Close = Close
+Reopen = Reopen
+
+# Confirmations
+ValidateCustomerReturn = Validate Customer Return
+ConfirmValidateCustomerReturn = Are you sure you want to validate this customer return? Stock movements will be created.
+CloseCustomerReturn = Close Customer Return
+ConfirmCloseCustomerReturn = Are you sure you want to close this customer return?
+ReopenCustomerReturn = Reopen Customer Return
+ConfirmReopenCustomerReturn = Are you sure you want to reopen this customer return to draft?
+DeleteCustomerReturn = Delete Customer Return
+ConfirmDeleteCustomerReturn = Are you sure you want to delete this customer return?
+
+# Errors
+ErrorCustomerReturnNotDraft = Customer return is not in draft status
+ErrorCustomerReturnNotValidated = Customer return is not in validated status
+ErrorFailedToGetNextRef = Failed to generate next reference number
+
+# Admin setup
+CustomerReturnSetup = Customer Return Setup
+DefaultWarehouse = Default Receiving Warehouse
+NumberingModel = Numbering Model
+
+# Shipment line picker
+SelectCustomerFirst = Select Customer First
+Shipment = Shipment
+ShipmentRef = Shipment Ref
+OrderRef = Order Ref
+Order = Order
+QtyOrdered = Qty Ordered
+QtyShipped = Qty Shipped
+QtyAlreadyReturned = Qty Already Returned
+ReturnQty = Return Qty
+SelectItemsToReturn = Select
+NoShipmentsFound = No shipments found for this customer
+SelectAtLeastOneLine = Please select at least one item to return
+Description = Description
+Comment = Comment
+LotSerial = Lot/Serial
+
+# Shipment-initiated returns
+CreateReturnFromShipment = Create Return
+ReturnValidated = Return %s validated
+SelectShipment = Select a shipment
+CustomerShipments = Shipments for this customer
+SelectShipmentToContinue = Select a shipment to continue
+
+# Credit note
+CreateCreditNote = Create Credit Note
+ConfirmCreateCreditNote = Confirm the creation of a credit note?
+ProductsInInvoice = Products in invoice %s
+CreditNoteCreated = Credit note %s created
+NoInvoiceLinked = No invoice linked to this return
+
+# Additional fields
+ReturnDate = Return Date
+Label = Label
+NotePublic = Note (public)
+NotePrivate = Note (private)
+
+# Permissions
+Permission510101a = Read customer returns
+Permission510102a = Create/edit customer returns
+Permission510103a = Delete customer returns
+Permission510104a = Validate customer returns
+Permission510105a = Close customer returns

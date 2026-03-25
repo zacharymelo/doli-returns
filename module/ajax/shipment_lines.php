@@ -3,18 +3,12 @@
 
 /**
  * \file    ajax/shipment_lines.php
- * \ingroup returnmgmt
+ * \ingroup customerreturn
  * \brief   Returns JSON list of shipment line items for a specific shipment.
  *          Includes qty ordered, qty shipped, qty already returned, batch/serial info.
  *
  * GET params:
- *   expedition_id  (int, required) — shipment ID to load lines for
- *
- * Schema reference (verified against Dolibarr core):
- *   llx_expeditiondet: fk_expedition, fk_product (nullable), fk_elementdet (order line id), qty
- *   llx_expeditiondet_batch: fk_expeditiondet, batch (varchar), qty
- *   llx_commandedet: rowid, qty (qty ordered)
- *   llx_returnmgmt_return_line: fk_expeditiondet (for qty_already_returned calc)
+ *   expedition_id  (int, required) -- shipment ID to load lines for
  */
 
 $res = 0;
@@ -23,7 +17,7 @@ if (!$res && file_exists("../../../main.inc.php"))   { $res = @include "../../..
 if (!$res && file_exists("../../../../main.inc.php")) { $res = @include "../../../../main.inc.php"; }
 if (!$res) { http_response_code(500); exit; }
 
-if (!$user->id || !$user->hasRight('returnmgmt', 'returnrequest', 'read')) {
+if (!$user->id || !$user->hasRight('customerreturn', 'customerreturn', 'read')) {
 	http_response_code(403);
 	exit;
 }
@@ -43,11 +37,11 @@ $sql .= " p.rowid AS fk_product, p.ref AS product_ref, p.label AS product_label,
 $sql .= " cd.qty AS qty_ordered,";
 $sql .= " edb.batch AS serial_number,";
 // Qty already returned: sum from return lines linked to this expeditiondet,
-// excluding returns in DRAFT (0) or REJECTED (9) status
-$sql .= " COALESCE((SELECT SUM(rl.qty) FROM ".MAIN_DB_PREFIX."returnmgmt_return_line rl";
-$sql .= "   INNER JOIN ".MAIN_DB_PREFIX."returnmgmt_return rr ON rr.rowid = rl.fk_returnmgmt_return";
+// excluding returns in DRAFT (0) status
+$sql .= " COALESCE((SELECT SUM(rl.qty) FROM ".MAIN_DB_PREFIX."customer_return_line rl";
+$sql .= "   INNER JOIN ".MAIN_DB_PREFIX."customer_return rr ON rr.rowid = rl.fk_customer_return";
 $sql .= "   WHERE rl.fk_expeditiondet = ed.rowid";
-$sql .= "   AND rr.status NOT IN (0, 9)), 0) AS qty_already_returned";
+$sql .= "   AND rr.status NOT IN (0)), 0) AS qty_already_returned";
 $sql .= " FROM ".MAIN_DB_PREFIX."expeditiondet ed";
 $sql .= " INNER JOIN ".MAIN_DB_PREFIX."expedition e ON e.rowid = ed.fk_expedition";
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."product p ON p.rowid = ed.fk_product";

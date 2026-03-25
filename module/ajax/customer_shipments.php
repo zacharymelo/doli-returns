@@ -3,12 +3,12 @@
 
 /**
  * \file    ajax/customer_shipments.php
- * \ingroup returnmgmt
+ * \ingroup customerreturn
  * \brief   Returns JSON list of validated shipments for a customer.
  *          Used by standalone create form to let user pick a shipment.
  *
  * GET params:
- *   socid  (int, required) — customer (fk_soc)
+ *   socid  (int, required) -- customer (fk_soc)
  */
 
 $res = 0;
@@ -17,7 +17,7 @@ if (!$res && file_exists("../../../main.inc.php"))   { $res = @include "../../..
 if (!$res && file_exists("../../../../main.inc.php")) { $res = @include "../../../../main.inc.php"; }
 if (!$res) { http_response_code(500); exit; }
 
-if (!$user->id || !$user->hasRight('returnmgmt', 'returnrequest', 'read')) {
+if (!$user->id || !$user->hasRight('customerreturn', 'customerreturn', 'read')) {
 	http_response_code(403);
 	exit;
 }

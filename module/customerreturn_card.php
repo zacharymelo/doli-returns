@@ -20,10 +20,10 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/html.formproduct.class.php';
 require_once DOL_DOCUMENT_ROOT.'/expedition/class/expedition.class.php';
-dol_include_once('/returnmgmt/class/returnrequest.class.php');
-dol_include_once('/returnmgmt/lib/returnmgmt.lib.php');
+dol_include_once('/customerreturn/class/customerreturn.class.php');
+dol_include_once('/customerreturn/lib/customerreturn.lib.php');
 
-$langs->loadLangs(array('returnmgmt@returnmgmt', 'companies', 'products', 'other', 'sendings', 'orders', 'bills'));
+$langs->loadLangs(array('customerreturn@customerreturn', 'companies', 'products', 'other', 'sendings', 'orders', 'bills'));
 
 $id     = GETPOSTINT('id');
 $ref    = GETPOST('ref', 'alpha');
@@ -32,14 +32,14 @@ $cancel = GETPOST('cancel', 'alpha');
 $confirm = GETPOST('confirm', 'alpha');
 $backtopage = GETPOST('backtopage', 'alpha');
 
-$object = new ReturnRequest($db);
+$object = new CustomerReturn($db);
 
 // Permissions
-$permread     = $user->hasRight('returnmgmt', 'returnrequest', 'read');
-$permwrite    = $user->hasRight('returnmgmt', 'returnrequest', 'write');
-$permdelete   = $user->hasRight('returnmgmt', 'returnrequest', 'delete');
-$permapprove  = $user->hasRight('returnmgmt', 'returnrequest', 'approve');
-$permclose    = $user->hasRight('returnmgmt', 'returnrequest', 'close');
+$permread     = $user->hasRight('customerreturn', 'customerreturn', 'read');
+$permwrite    = $user->hasRight('customerreturn', 'customerreturn', 'write');
+$permdelete   = $user->hasRight('customerreturn', 'customerreturn', 'delete');
+$permvalidate = $user->hasRight('customerreturn', 'customerreturn', 'validate');
+$permclose    = $user->hasRight('customerreturn', 'customerreturn', 'close');
 
 if (!$permread) {
 	accessforbidden();
@@ -55,7 +55,7 @@ if ($id > 0 || !empty($ref)) {
 }
 
 // Initialize hook manager
-$hookmanager->initHooks(array('returnrequestcard', 'globalcard'));
+$hookmanager->initHooks(array('customerreturncard', 'globalcard'));
 
 $form = new Form($db);
 $formcompany = new FormCompany($db);
@@ -83,15 +83,12 @@ if ($reshook < 0) {
 // Create
 if ($action == 'add' && $permwrite) {
 	$object->fk_soc          = GETPOSTINT('fk_soc');
-	$object->return_reason    = GETPOST('return_reason', 'alpha');
-	$object->resolution_type  = GETPOST('resolution_type', 'alpha');
 	$object->fk_warehouse     = GETPOSTINT('fk_warehouse');
-	$object->fk_user_assigned = GETPOSTINT('fk_user_assigned');
 	$object->note_private     = GETPOST('note_private', 'restricthtml');
 	$object->note_public      = GETPOST('note_public', 'restricthtml');
 	$object->fk_expedition    = GETPOSTINT('fk_expedition');
 	$object->label            = GETPOST('label', 'alpha');
-	$object->date_return      = dol_mktime(0, 0, 0, GETPOSTINT('date_returnmonth'), GETPOSTINT('date_returnday'), GETPOSTINT('date_returnyear'));
+	$object->return_date      = dol_mktime(0, 0, 0, GETPOSTINT('return_datemonth'), GETPOSTINT('return_dateday'), GETPOSTINT('return_dateyear'));
 
 	$toselect = GETPOST('toselect', 'array');
 
@@ -104,7 +101,7 @@ if ($action == 'add' && $permwrite) {
 	} else {
 		$result = $object->create($user);
 		if ($result > 0) {
-			// Add selected shipment lines as return request lines
+			// Add selected shipment lines as return lines
 			foreach ($toselect as $line_id) {
 				$line_id = (int) $line_id;
 				$qty = GETPOST('return_qty_'.$line_id, 'int');
@@ -147,19 +144,11 @@ if ($action == 'add' && $permwrite) {
 // Update
 if ($action == 'update' && $permwrite) {
 	$object->fk_soc               = GETPOSTINT('fk_soc');
-	$object->return_reason         = GETPOST('return_reason', 'alpha');
-	$object->resolution_type       = GETPOST('resolution_type', 'alpha');
 	$object->fk_warehouse          = GETPOSTINT('fk_warehouse');
-	$object->fk_user_assigned      = GETPOSTINT('fk_user_assigned');
-	$object->return_tracking       = GETPOST('return_tracking', 'alpha');
-	$object->condition_on_receipt  = GETPOST('condition_on_receipt', 'alpha');
-	$object->refund_amount         = GETPOST('refund_amount', 'alpha');
-	$object->exchange_fk_product   = GETPOSTINT('exchange_fk_product');
-	$object->exchange_serial_number = GETPOST('exchange_serial_number', 'alpha');
 	$object->note_private          = GETPOST('note_private', 'restricthtml');
 	$object->note_public           = GETPOST('note_public', 'restricthtml');
 	$object->label                 = GETPOST('label', 'alpha');
-	$object->date_return           = dol_mktime(0, 0, 0, GETPOSTINT('date_returnmonth'), GETPOSTINT('date_returnday'), GETPOSTINT('date_returnyear'));
+	$object->return_date           = dol_mktime(0, 0, 0, GETPOSTINT('return_datemonth'), GETPOSTINT('return_dateday'), GETPOSTINT('return_dateyear'));
 
 	$result = $object->update($user);
 	if ($result > 0) {
@@ -171,8 +160,8 @@ if ($action == 'update' && $permwrite) {
 	}
 }
 
-// Validate (submit): DRAFT -> PENDING
-if ($action == 'confirm_validate' && $confirm == 'yes' && $permwrite) {
+// Validate: DRAFT -> VALIDATED (triggers stock movement)
+if ($action == 'confirm_validate' && $confirm == 'yes' && $permvalidate) {
 	$result = $object->validate($user);
 	if ($result > 0) {
 		header("Location: ".$_SERVER['PHP_SELF'].'?id='.$object->id);
@@ -182,9 +171,9 @@ if ($action == 'confirm_validate' && $confirm == 'yes' && $permwrite) {
 	}
 }
 
-// Approve: PENDING -> APPROVED
-if ($action == 'confirm_approve' && $confirm == 'yes' && $permapprove) {
-	$result = $object->approve($user);
+// Close: VALIDATED -> CLOSED
+if ($action == 'confirm_close' && $confirm == 'yes' && $permclose) {
+	$result = $object->close($user);
 	if ($result > 0) {
 		header("Location: ".$_SERVER['PHP_SELF'].'?id='.$object->id);
 		exit;
@@ -193,9 +182,9 @@ if ($action == 'confirm_approve' && $confirm == 'yes' && $permapprove) {
 	}
 }
 
-// Reject: PENDING -> REJECTED
-if ($action == 'confirm_reject' && $confirm == 'yes' && $permapprove) {
-	$result = $object->reject($user);
+// Reopen: VALIDATED -> DRAFT
+if ($action == 'confirm_reopen' && $confirm == 'yes' && $permvalidate) {
+	$result = $object->reopen($user);
 	if ($result > 0) {
 		header("Location: ".$_SERVER['PHP_SELF'].'?id='.$object->id);
 		exit;
@@ -204,55 +193,7 @@ if ($action == 'confirm_reject' && $confirm == 'yes' && $permapprove) {
 	}
 }
 
-// Receive: APPROVED -> RECEIVED
-if ($action == 'confirm_receive' && $confirm == 'yes' && $permwrite) {
-	$object->return_tracking      = GETPOST('return_tracking', 'alpha');
-	$object->condition_on_receipt = GETPOST('condition_on_receipt', 'alpha');
-	if (!empty($object->return_tracking) || !empty($object->condition_on_receipt)) {
-		$object->update($user, 1);
-	}
-	$result = $object->receive($user);
-	if ($result > 0) {
-		header("Location: ".$_SERVER['PHP_SELF'].'?id='.$object->id);
-		exit;
-	} else {
-		setEventMessages($object->error, $object->errors, 'errors');
-	}
-}
-
-// Process: RECEIVED -> PROCESSING
-if ($action == 'confirm_process' && $confirm == 'yes' && $permwrite) {
-	$object->resolution_type = GETPOST('resolution_type', 'alpha');
-	if (!empty($object->resolution_type)) {
-		$object->update($user, 1);
-	}
-	$result = $object->process($user);
-	if ($result > 0) {
-		header("Location: ".$_SERVER['PHP_SELF'].'?id='.$object->id);
-		exit;
-	} else {
-		setEventMessages($object->error, $object->errors, 'errors');
-	}
-}
-
-// Complete: PROCESSING -> COMPLETED
-if ($action == 'confirm_complete' && $confirm == 'yes' && $permclose) {
-	$object->refund_amount          = GETPOST('refund_amount', 'alpha');
-	$object->exchange_fk_product    = GETPOSTINT('exchange_fk_product');
-	$object->exchange_serial_number = GETPOST('exchange_serial_number', 'alpha');
-	if ($object->refund_amount || $object->exchange_fk_product) {
-		$object->update($user, 1);
-	}
-	$result = $object->complete($user);
-	if ($result > 0) {
-		header("Location: ".$_SERVER['PHP_SELF'].'?id='.$object->id);
-		exit;
-	} else {
-		setEventMessages($object->error, $object->errors, 'errors');
-	}
-}
-
-// Create credit note from completed refund return
+// Create credit note from closed return
 if ($action == 'confirm_createcreditnote' && $confirm == 'yes' && $permclose) {
 	$fk_facture = $object->getLinkedInvoice();
 	if ($fk_facture > 0) {
@@ -270,10 +211,9 @@ if ($action == 'confirm_createcreditnote' && $confirm == 'yes' && $permclose) {
 
 		$result = $creditnote->create($user);
 		if ($result > 0) {
-			// Add lines from return request with original pricing from invoice
+			// Add lines from return with original pricing from invoice
 			foreach ($object->lines as $rline) {
 				if ($rline->fk_product > 0) {
-					// Find matching line in source invoice
 					foreach ($facture_source->lines as $fline) {
 						if ($fline->fk_product == $rline->fk_product) {
 							$creditnote->addline(
@@ -301,7 +241,7 @@ if ($action == 'confirm_createcreditnote' && $confirm == 'yes' && $permclose) {
 if ($action == 'confirm_delete' && $confirm == 'yes' && $permdelete) {
 	$result = $object->delete($user);
 	if ($result > 0) {
-		header("Location: returnrequest_list.php");
+		header("Location: customerreturn_list.php");
 		exit;
 	} else {
 		setEventMessages($object->error, $object->errors, 'errors');
@@ -313,7 +253,7 @@ if ($action == 'confirm_delete' && $confirm == 'yes' && $permdelete) {
  * VIEW
  */
 
-$title = $langs->trans('ReturnRequest');
+$title = $langs->trans('CustomerReturn');
 llxHeader('', $title);
 
 // ---------- CREATE FORM ----------
@@ -364,7 +304,7 @@ if ($action == 'create') {
 		$soc = new Societe($db);
 		$soc->fetch($prefill_fk_soc);
 
-		print load_fiche_titre($langs->trans('NewReturnRequest'), '', 'object_technic');
+		print load_fiche_titre($langs->trans('NewCustomerReturn'), '', 'object_dollyrevert');
 
 		print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
 		print '<input type="hidden" name="token" value="'.newToken().'">';
@@ -401,24 +341,12 @@ if ($action == 'create') {
 
 		// Date Return
 		print '<tr><td>'.$langs->trans('ReturnDate').'</td><td>';
-		print $form->selectDate('', 'date_return', 0, 0, 1, '', 1, 1);
+		print $form->selectDate('', 'return_date', 0, 0, 1, '', 1, 1);
 		print '</td></tr>';
 
 		// Label
 		print '<tr><td>'.$langs->trans('Label').'</td><td>';
 		print '<input type="text" name="label" class="minwidth300" value="'.dol_escape_htmltag(GETPOST('label', 'alpha')).'">';
-		print '</td></tr>';
-
-		// Return reason
-		print '<tr><td>'.$langs->trans('ReturnReason').'</td><td>';
-		$reasons = returnrequest_reason_types();
-		print $form->selectarray('return_reason', $reasons, GETPOST('return_reason', 'alpha'), 1, 0, 0, '', 0, 0, 0, '', 'minwidth200');
-		print '</td></tr>';
-
-		// Resolution type
-		print '<tr><td>'.$langs->trans('ResolutionType').'</td><td>';
-		$resolutions = returnrequest_resolution_types();
-		print $form->selectarray('resolution_type', $resolutions, GETPOST('resolution_type', 'alpha'), 1, 0, 0, '', 0, 0, 0, '', 'minwidth200');
 		print '</td></tr>';
 
 		// Notes
@@ -437,7 +365,7 @@ if ($action == 'create') {
 		print dol_get_fiche_end();
 
 		// ----- Line items table (server-side) -----
-		$wh_default = getDolGlobalInt('RETURNMGMT_WAREHOUSE_DEFAULT');
+		$wh_default = getDolGlobalInt('CUSTOMERRETURN_WAREHOUSE_DEFAULT');
 
 		// Query expeditiondet lines for this shipment
 		$sql_lines = "SELECT ed.rowid as line_id, ed.fk_product, ed.qty as qty_shipped,";
@@ -459,12 +387,12 @@ if ($action == 'create') {
 			// Pre-fetch already returned quantities
 			$already_returned = array();
 			$sql_ar = "SELECT rl.fk_expeditiondet, SUM(rl.qty) as qty_returned";
-			$sql_ar .= " FROM ".MAIN_DB_PREFIX."returnmgmt_return_line as rl";
-			$sql_ar .= " INNER JOIN ".MAIN_DB_PREFIX."returnmgmt_return as r ON r.rowid = rl.fk_returnmgmt_return";
+			$sql_ar .= " FROM ".MAIN_DB_PREFIX."customer_return_line as rl";
+			$sql_ar .= " INNER JOIN ".MAIN_DB_PREFIX."customer_return as r ON r.rowid = rl.fk_customer_return";
 			$sql_ar .= " WHERE rl.fk_expeditiondet IN (";
 			$sql_ar .= "SELECT ed2.rowid FROM ".MAIN_DB_PREFIX."expeditiondet as ed2 WHERE ed2.fk_expedition = ".((int) $fk_expedition);
 			$sql_ar .= ")";
-			$sql_ar .= " AND r.status NOT IN (0, 9)";
+			$sql_ar .= " AND r.status NOT IN (0)";
 			$sql_ar .= " GROUP BY rl.fk_expeditiondet";
 			$resql_ar = $db->query($sql_ar);
 			if ($resql_ar) {
@@ -595,7 +523,7 @@ if ($action == 'create') {
 
 	} else {
 		// ----- Entry B: Standalone (no fk_expedition) -----
-		print load_fiche_titre($langs->trans('NewReturnRequest'), '', 'object_technic');
+		print load_fiche_titre($langs->trans('NewCustomerReturn'), '', 'object_dollyrevert');
 
 		print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
 		print '<input type="hidden" name="token" value="'.newToken().'">';
@@ -616,23 +544,11 @@ if ($action == 'create') {
 		print $form->select_company($prefill_fk_soc, 'fk_soc', '(s.client:IN:1,3)', 1, 0, 0, array(), 0, 'minwidth300');
 		print '</td></tr>';
 
-		// Return reason
-		print '<tr><td>'.$langs->trans('ReturnReason').'</td><td>';
-		$reasons = returnrequest_reason_types();
-		print $form->selectarray('return_reason', $reasons, GETPOST('return_reason', 'alpha'), 1, 0, 0, '', 0, 0, 0, '', 'minwidth200');
-		print '</td></tr>';
-
-		// Resolution type
-		print '<tr><td>'.$langs->trans('ResolutionType').'</td><td>';
-		$resolutions = returnrequest_resolution_types();
-		print $form->selectarray('resolution_type', $resolutions, GETPOST('resolution_type', 'alpha'), 1, 0, 0, '', 0, 0, 0, '', 'minwidth200');
-		print '</td></tr>';
-
 		print '</table>';
 
 		print dol_get_fiche_end();
 
-		// Shipment list — loaded via AJAX when customer is selected
+		// Shipment list -- loaded via AJAX when customer is selected
 		print '<br>';
 		print '<div id="shipment-list-container">';
 		print '<p class="opacitymedium">'.$langs->trans('SelectCustomerFirst').'</p>';
@@ -642,7 +558,7 @@ if ($action == 'create') {
 
 		// JavaScript: load customer shipments list, clicking a row redirects to Entry A
 		print '<script>(function(){
-	var shipmentsAjaxUrl = "'.DOL_URL_ROOT.'/custom/returnmgmt/ajax/customer_shipments.php";
+	var shipmentsAjaxUrl = "'.DOL_URL_ROOT.'/custom/customerreturn/ajax/customer_shipments.php";
 	var container = document.getElementById("shipment-list-container");
 	var lblRef       = "'.dol_escape_js($langs->trans('Ref')).'";
 	var lblDate      = "'.dol_escape_js($langs->trans('Date')).'";
@@ -712,8 +628,8 @@ if ($action == 'create') {
 
 // ---------- EDIT FORM ----------
 elseif ($action == 'edit' && $object->id > 0 && $permwrite) {
-	$head = returnrequest_prepare_head($object);
-	print dol_get_fiche_head($head, 'card', $langs->trans('ReturnRequest'), -1, 'technic');
+	$head = customerreturn_prepare_head($object);
+	print dol_get_fiche_head($head, 'card', $langs->trans('CustomerReturn'), -1, 'dollyrevert');
 
 	print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
 	print '<input type="hidden" name="token" value="'.newToken().'">';
@@ -725,7 +641,7 @@ elseif ($action == 'edit' && $object->id > 0 && $permwrite) {
 	// Ref
 	print '<tr><td class="titlefield">'.$langs->trans('Ref').'</td><td>'.$object->ref.'</td></tr>';
 
-	// Customer (read-only in edit — lines are already tied to this customer)
+	// Customer (read-only in edit)
 	if ($object->fk_soc > 0) {
 		$soc = new Societe($db);
 		$soc->fetch($object->fk_soc);
@@ -747,17 +663,7 @@ elseif ($action == 'edit' && $object->id > 0 && $permwrite) {
 
 	// Date Return
 	print '<tr><td>'.$langs->trans('ReturnDate').'</td><td>';
-	print $form->selectDate($object->date_return, 'date_return', 0, 0, 1, '', 1, 1);
-	print '</td></tr>';
-
-	// Return reason
-	print '<tr><td>'.$langs->trans('ReturnReason').'</td><td>';
-	print $form->selectarray('return_reason', returnrequest_reason_types(), $object->return_reason, 1, 0, 0, '', 0, 0, 0, '', 'minwidth200');
-	print '</td></tr>';
-
-	// Resolution type
-	print '<tr><td>'.$langs->trans('ResolutionType').'</td><td>';
-	print $form->selectarray('resolution_type', returnrequest_resolution_types(), $object->resolution_type, 1, 0, 0, '', 0, 0, 0, '', 'minwidth200');
+	print $form->selectDate($object->return_date, 'return_date', 0, 0, 1, '', 1, 1);
 	print '</td></tr>';
 
 	// Warehouse
@@ -766,36 +672,6 @@ elseif ($action == 'edit' && $object->id > 0 && $permwrite) {
 		print $formproduct->selectWarehouses($object->fk_warehouse, 'fk_warehouse', '', 1);
 		print '</td></tr>';
 	}
-
-	// Return tracking
-	print '<tr><td>'.$langs->trans('ReturnTracking').'</td><td>';
-	print '<input type="text" name="return_tracking" class="minwidth300" value="'.dol_escape_htmltag($object->return_tracking).'">';
-	print '</td></tr>';
-
-	// Condition on receipt
-	print '<tr><td>'.$langs->trans('ConditionOnReceipt').'</td><td>';
-	print $form->selectarray('condition_on_receipt', returnrequest_condition_types(), $object->condition_on_receipt, 1, 0, 0, '', 0, 0, 0, '', 'minwidth200');
-	print '</td></tr>';
-
-	// Refund amount
-	print '<tr><td>'.$langs->trans('RefundAmount').'</td><td>';
-	print '<input type="text" name="refund_amount" class="minwidth100" value="'.dol_escape_htmltag($object->refund_amount).'">';
-	print '</td></tr>';
-
-	// Exchange product
-	print '<tr><td>'.$langs->trans('ExchangeProduct').'</td><td>';
-	$form->select_produits($object->exchange_fk_product, 'exchange_fk_product', '', 0, 0, -1, 2, '', 0, array(), 0, 'all', 0, 'minwidth300');
-	print '</td></tr>';
-
-	// Exchange serial
-	print '<tr><td>'.$langs->trans('ExchangeSerialNumber').'</td><td>';
-	print '<input type="text" name="exchange_serial_number" class="minwidth200" value="'.dol_escape_htmltag($object->exchange_serial_number).'">';
-	print '</td></tr>';
-
-	// Assigned user
-	print '<tr><td>'.$langs->trans('AssignedTo').'</td><td>';
-	print $form->select_dolusers($object->fk_user_assigned, 'fk_user_assigned', 1, null, 0, '', '', 0, 0, 0, '', 0, '', 'minwidth200');
-	print '</td></tr>';
 
 	// Notes
 	print '<tr><td>'.$langs->trans('NotePublic').'</td><td>';
@@ -810,7 +686,7 @@ elseif ($action == 'edit' && $object->id > 0 && $permwrite) {
 
 	print '</table>';
 
-	// Return lines (read-only — selected at creation)
+	// Return lines (read-only -- selected at creation)
 	if (!empty($object->lines)) {
 		print '<br>';
 		print '<div class="div-table-responsive-no-min">';
@@ -866,39 +742,16 @@ elseif ($object->id > 0) {
 
 	// Confirmation dialogs
 	if ($action == 'validate') {
-		print $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id, $langs->trans('ValidateReturnRequest'), $langs->trans('ConfirmValidateReturnRequest'), 'confirm_validate', '', 0, 1);
-	}
-	if ($action == 'approve') {
-		print $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id, $langs->trans('ApproveReturnRequest'), $langs->trans('ConfirmApproveReturnRequest'), 'confirm_approve', '', 0, 1);
-	}
-	if ($action == 'reject') {
-		print $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id, $langs->trans('RejectReturnRequest'), $langs->trans('ConfirmRejectReturnRequest'), 'confirm_reject', '', 0, 1);
-	}
-	if ($action == 'receive') {
-		$formquestion = array(
-			array('type' => 'text', 'name' => 'return_tracking', 'label' => $langs->trans('ReturnTracking'), 'value' => $object->return_tracking),
-			array('type' => 'select', 'name' => 'condition_on_receipt', 'label' => $langs->trans('ConditionOnReceipt'), 'values' => returnrequest_condition_types(), 'default' => $object->condition_on_receipt),
-		);
-		print $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id, $langs->trans('ReceiveReturn'), $langs->trans('ConfirmReceiveReturn'), 'confirm_receive', $formquestion, 0, 1);
-	}
-	if ($action == 'processreturn') {
-		$formquestion = array(
-			array('type' => 'select', 'name' => 'resolution_type', 'label' => $langs->trans('ResolutionType'), 'values' => returnrequest_resolution_types(), 'default' => $object->resolution_type),
-		);
-		print $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id, $langs->trans('ProcessReturn'), $langs->trans('ConfirmProcessReturn'), 'confirm_process', $formquestion, 0, 1);
+		print $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id, $langs->trans('ValidateCustomerReturn'), $langs->trans('ConfirmValidateCustomerReturn'), 'confirm_validate', '', 0, 1);
 	}
 	if ($action == 'close') {
-		$formquestion = array();
-		if ($object->resolution_type == 'refund') {
-			$formquestion[] = array('type' => 'text', 'name' => 'refund_amount', 'label' => $langs->trans('RefundAmount'), 'value' => $object->refund_amount);
-		}
-		if ($object->resolution_type == 'exchange') {
-			$formquestion[] = array('type' => 'text', 'name' => 'exchange_serial_number', 'label' => $langs->trans('ExchangeSerialNumber'), 'value' => $object->exchange_serial_number);
-		}
-		print $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id, $langs->trans('CompleteReturn'), $langs->trans('ConfirmCompleteReturn'), 'confirm_complete', $formquestion, 0, 1);
+		print $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id, $langs->trans('CloseCustomerReturn'), $langs->trans('ConfirmCloseCustomerReturn'), 'confirm_close', '', 0, 1);
+	}
+	if ($action == 'reopen') {
+		print $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id, $langs->trans('ReopenCustomerReturn'), $langs->trans('ConfirmReopenCustomerReturn'), 'confirm_reopen', '', 0, 1);
 	}
 	if ($action == 'delete') {
-		print $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id, $langs->trans('DeleteReturnRequest'), $langs->trans('ConfirmDeleteReturnRequest'), 'confirm_delete', '', 0, 1);
+		print $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id, $langs->trans('DeleteCustomerReturn'), $langs->trans('ConfirmDeleteCustomerReturn'), 'confirm_delete', '', 0, 1);
 	}
 	if ($action == 'createcreditnote') {
 		$fk_facture = $object->getLinkedInvoice();
@@ -923,10 +776,10 @@ elseif ($object->id > 0) {
 		}
 	}
 
-	$head = returnrequest_prepare_head($object);
-	print dol_get_fiche_head($head, 'card', $langs->trans('ReturnRequest'), -1, 'technic');
+	$head = customerreturn_prepare_head($object);
+	print dol_get_fiche_head($head, 'card', $langs->trans('CustomerReturn'), -1, 'dollyrevert');
 
-	$linkback = '<a href="'.dol_buildpath('/returnmgmt/returnrequest_list.php', 1).'">'.$langs->trans('BackToList').'</a>';
+	$linkback = '<a href="'.dol_buildpath('/customerreturn/customerreturn_list.php', 1).'">'.$langs->trans('BackToList').'</a>';
 
 	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'ref', '', '', 0, '', '', 0);
 
@@ -975,18 +828,8 @@ elseif ($object->id > 0) {
 	}
 
 	// Date Return
-	if (!empty($object->date_return)) {
-		print '<tr><td>'.$langs->trans('ReturnDate').'</td><td>'.dol_print_date($object->date_return, 'day').'</td></tr>';
-	}
-
-	// Return reason
-	if (!empty($object->return_reason)) {
-		print '<tr><td>'.$langs->trans('ReturnReason').'</td><td>'.returnrequest_reason_label($object->return_reason).'</td></tr>';
-	}
-
-	// Resolution type
-	if (!empty($object->resolution_type)) {
-		print '<tr><td>'.$langs->trans('ResolutionType').'</td><td>'.returnrequest_resolution_label($object->resolution_type).'</td></tr>';
+	if (!empty($object->return_date)) {
+		print '<tr><td>'.$langs->trans('ReturnDate').'</td><td>'.dol_print_date($object->return_date, 'day').'</td></tr>';
 	}
 
 	// Warehouse
@@ -995,48 +838,6 @@ elseif ($object->id > 0) {
 		$warehouse = new Entrepot($db);
 		$warehouse->fetch($object->fk_warehouse);
 		print '<tr><td>'.$langs->trans('Warehouse').'</td><td>'.$warehouse->getNomUrl(1).'</td></tr>';
-	}
-
-	// Assigned to
-	if ($object->fk_user_assigned > 0) {
-		$usertmp = new User($db);
-		$usertmp->fetch($object->fk_user_assigned);
-		print '<tr><td>'.$langs->trans('AssignedTo').'</td><td>'.$usertmp->getNomUrl(1).'</td></tr>';
-	}
-
-	// Return tracking
-	if (!empty($object->return_tracking)) {
-		print '<tr><td>'.$langs->trans('ReturnTracking').'</td><td>'.dol_escape_htmltag($object->return_tracking).'</td></tr>';
-	}
-
-	// Date received
-	if (!empty($object->date_received)) {
-		print '<tr><td>'.$langs->trans('DateReceived').'</td><td>'.dol_print_date($object->date_received, 'dayhour').'</td></tr>';
-	}
-
-	// Condition on receipt
-	if (!empty($object->condition_on_receipt)) {
-		print '<tr><td>'.$langs->trans('ConditionOnReceipt').'</td><td>'.returnrequest_condition_label($object->condition_on_receipt).'</td></tr>';
-	}
-
-	// Refund amount (if refund resolution)
-	if ($object->resolution_type == 'refund' && !empty($object->refund_amount)) {
-		print '<tr><td>'.$langs->trans('RefundAmount').'</td><td>'.price($object->refund_amount).'</td></tr>';
-	}
-
-	// Exchange product (if exchange resolution)
-	if ($object->resolution_type == 'exchange' && $object->exchange_fk_product > 0) {
-		$exchprod = new Product($db);
-		$exchprod->fetch($object->exchange_fk_product);
-		print '<tr><td>'.$langs->trans('ExchangeProduct').'</td><td>'.$exchprod->getNomUrl(1).'</td></tr>';
-		if (!empty($object->exchange_serial_number)) {
-			print '<tr><td>'.$langs->trans('ExchangeSerialNumber').'</td><td>'.dol_escape_htmltag($object->exchange_serial_number).'</td></tr>';
-		}
-	}
-
-	// Date resolved
-	if (!empty($object->date_resolved)) {
-		print '<tr><td>'.$langs->trans('DateResolved').'</td><td>'.dol_print_date($object->date_resolved, 'dayhour').'</td></tr>';
 	}
 
 	// Date creation
@@ -1100,47 +901,32 @@ elseif ($object->id > 0) {
 	print '<div class="tabsAction">';
 
 	// Edit
-	if ($object->status == ReturnRequest::STATUS_DRAFT && $permwrite) {
+	if ($object->status == CustomerReturn::STATUS_DRAFT && $permwrite) {
 		print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=edit&token='.newToken().'">'.$langs->trans('Modify').'</a>';
 	}
 
-	// Validate (submit)
-	if ($object->status == ReturnRequest::STATUS_DRAFT && $permwrite) {
-		print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=validate&token='.newToken().'">'.$langs->trans('Submit').'</a>';
+	// Validate (triggers stock movement)
+	if ($object->status == CustomerReturn::STATUS_DRAFT && $permvalidate) {
+		print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=validate&token='.newToken().'">'.$langs->trans('Validate').'</a>';
 	}
 
-	// Approve
-	if ($object->status == ReturnRequest::STATUS_PENDING && $permapprove) {
-		print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=approve&token='.newToken().'">'.$langs->trans('Approve').'</a>';
+	// Close
+	if ($object->status == CustomerReturn::STATUS_VALIDATED && $permclose) {
+		print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=close&token='.newToken().'">'.$langs->trans('Close').'</a>';
 	}
 
-	// Reject
-	if ($object->status == ReturnRequest::STATUS_PENDING && $permapprove) {
-		print '<a class="butActionDelete" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=reject&token='.newToken().'">'.$langs->trans('Reject').'</a>';
-	}
-
-	// Receive
-	if ($object->status == ReturnRequest::STATUS_APPROVED && $permwrite) {
-		print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=receive&token='.newToken().'">'.$langs->trans('Receive').'</a>';
-	}
-
-	// Process
-	if ($object->status == ReturnRequest::STATUS_RECEIVED && $permwrite) {
-		print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=processreturn&token='.newToken().'">'.$langs->trans('Process').'</a>';
-	}
-
-	// Complete
-	if ($object->status == ReturnRequest::STATUS_PROCESSING && $permclose) {
-		print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=close&token='.newToken().'">'.$langs->trans('Complete').'</a>';
+	// Reopen
+	if ($object->status == CustomerReturn::STATUS_VALIDATED && $permvalidate) {
+		print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=reopen&token='.newToken().'">'.$langs->trans('Reopen').'</a>';
 	}
 
 	// Create Credit Note
-	if ($object->status == ReturnRequest::STATUS_COMPLETED && $object->resolution_type == 'refund' && $permclose) {
+	if ($object->status == CustomerReturn::STATUS_CLOSED && $permclose) {
 		print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=createcreditnote&token='.newToken().'">'.$langs->trans('CreateCreditNote').'</a>';
 	}
 
 	// Delete
-	if ($object->status == ReturnRequest::STATUS_DRAFT && $permdelete) {
+	if ($object->status == CustomerReturn::STATUS_DRAFT && $permdelete) {
 		print '<a class="butActionDelete" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=delete&token='.newToken().'">'.$langs->trans('Delete').'</a>';
 	}
 

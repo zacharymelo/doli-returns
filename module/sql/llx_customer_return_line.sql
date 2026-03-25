@@ -1,6 +1,6 @@
-CREATE TABLE llx_returnmgmt_return_line(
+CREATE TABLE llx_customer_return_line(
     rowid                  INTEGER       AUTO_INCREMENT PRIMARY KEY,
-    fk_returnmgmt_return   INTEGER       NOT NULL,
+    fk_customer_return     INTEGER       NOT NULL,
     fk_product             INTEGER,
     description            TEXT,
     qty                    DOUBLE        NOT NULL DEFAULT 1,

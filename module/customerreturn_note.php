@@ -14,19 +14,19 @@ if (!$res && file_exists("../../../main.inc.php")) { $res = @include "../../../m
 if (!$res) { die("Include of main fails"); }
 
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions.lib.php';
-dol_include_once('/returnmgmt/class/returnrequest.class.php');
-dol_include_once('/returnmgmt/lib/returnmgmt.lib.php');
+dol_include_once('/customerreturn/class/customerreturn.class.php');
+dol_include_once('/customerreturn/lib/customerreturn.lib.php');
 
-$langs->loadLangs(array('returnmgmt@returnmgmt', 'companies'));
+$langs->loadLangs(array('customerreturn@customerreturn', 'companies'));
 
 $id     = GETPOSTINT('id');
 $ref    = GETPOST('ref', 'alpha');
 $action = GETPOST('action', 'aZ09');
 
-$object = new ReturnRequest($db);
+$object = new CustomerReturn($db);
 
-$permread  = $user->hasRight('returnmgmt', 'returnrequest', 'read');
-$permwrite = $user->hasRight('returnmgmt', 'returnrequest', 'write');
+$permread  = $user->hasRight('customerreturn', 'customerreturn', 'read');
+$permwrite = $user->hasRight('customerreturn', 'customerreturn', 'write');
 
 if (!$permread) {
 	accessforbidden();
@@ -51,13 +51,13 @@ if ($action == 'update_note_private' && $permwrite) {
 }
 
 // View
-llxHeader('', $langs->trans('ReturnRequest'));
+llxHeader('', $langs->trans('CustomerReturn'));
 
 if ($object->id > 0) {
-	$head = returnrequest_prepare_head($object);
-	print dol_get_fiche_head($head, 'note', $langs->trans('ReturnRequest'), -1, 'technic');
+	$head = customerreturn_prepare_head($object);
+	print dol_get_fiche_head($head, 'note', $langs->trans('CustomerReturn'), -1, 'dollyrevert');
 
-	$linkback = '<a href="'.dol_buildpath('/returnmgmt/returnrequest_list.php', 1).'">'.$langs->trans('BackToList').'</a>';
+	$linkback = '<a href="'.dol_buildpath('/customerreturn/customerreturn_list.php', 1).'">'.$langs->trans('BackToList').'</a>';
 	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'ref');
 
 	print '<div class="fichecenter">';

@@ -7,7 +7,7 @@
  * (at your option) any later version.
  */
 
-class ActionsReturnmgmt
+class ActionsCustomerreturn
 {
 	public $db;
 	public $error = '';
@@ -26,7 +26,7 @@ class ActionsReturnmgmt
 	}
 
 	/**
-	 * Register element properties so Dolibarr can resolve returnrequest
+	 * Register element properties so Dolibarr can resolve customerreturn
 	 * in linked objects, "Link to..." dropdowns, etc.
 	 *
 	 * @param  array  $parameters Hook parameters
@@ -39,15 +39,15 @@ class ActionsReturnmgmt
 	{
 		$elementType = isset($parameters['elementType']) ? $parameters['elementType'] : '';
 
-		if ($elementType === 'returnrequest' || $elementType === 'returnmgmt_returnrequest') {
+		if ($elementType === 'customerreturn' || $elementType === 'customerreturn_customerreturn') {
 			$this->results = array(
-				'module'        => 'returnmgmt',
-				'element'       => 'returnrequest',
-				'table_element' => 'returnmgmt_return',
-				'subelement'    => 'returnrequest',
-				'classpath'     => 'returnmgmt/class',
-				'classfile'     => 'returnrequest',
-				'classname'     => 'ReturnRequest',
+				'module'        => 'customerreturn',
+				'element'       => 'customerreturn',
+				'table_element' => 'customer_return',
+				'subelement'    => 'customerreturn',
+				'classpath'     => 'customerreturn/class',
+				'classfile'     => 'customerreturn',
+				'classname'     => 'CustomerReturn',
 			);
 		}
 
@@ -55,7 +55,7 @@ class ActionsReturnmgmt
 	}
 
 	/**
-	 * Inject returnrequest into "Link to..." dropdown on any native card
+	 * Inject customerreturn into "Link to..." dropdown on any native card
 	 *
 	 * @param  array  $parameters Hook parameters
 	 * @param  object $object     Current object
@@ -67,7 +67,7 @@ class ActionsReturnmgmt
 	{
 		global $db, $user;
 
-		if (!isModEnabled('returnmgmt')) {
+		if (!isModEnabled('customerreturn')) {
 			return 0;
 		}
 
@@ -80,18 +80,18 @@ class ActionsReturnmgmt
 		$sanitized = $db->sanitize($listofidcompanytoscan);
 		$this->results = array();
 
-		if ($user->hasRight('returnmgmt', 'returnrequest', 'read')) {
-			$this->results['returnrequest'] = array(
+		if ($user->hasRight('customerreturn', 'customerreturn', 'read')) {
+			$this->results['customerreturn'] = array(
 				'enabled' => 1,
 				'perms'   => 1,
-				'label'   => 'LinkToReturnRequest',
+				'label'   => 'LinkToCustomerReturn',
 				'sql'     => "SELECT s.rowid as socid, s.nom as name, s.client,"
 					." t.rowid, t.ref"
 					." FROM ".MAIN_DB_PREFIX."societe as s,"
-					." ".MAIN_DB_PREFIX."returnmgmt_return as t"
+					." ".MAIN_DB_PREFIX."customer_return as t"
 					." WHERE t.fk_soc = s.rowid"
 					." AND t.fk_soc IN (".$sanitized.")"
-					." AND t.entity IN (".getEntity('returnrequest').")"
+					." AND t.entity IN (".getEntity('customerreturn').")"
 					." ORDER BY t.ref",
 			);
 		}
@@ -100,7 +100,7 @@ class ActionsReturnmgmt
 	}
 
 	/**
-	 * Inject hidden origin fields when creating a sales order from a return request
+	 * Inject hidden origin fields when creating a sales order from a customer return
 	 *
 	 * @param  array  $parameters Hook parameters
 	 * @param  object $object     Current object
@@ -112,15 +112,15 @@ class ActionsReturnmgmt
 	{
 		global $langs, $db, $user, $conf;
 
-		if (!isModEnabled('returnmgmt')) {
+		if (!isModEnabled('customerreturn')) {
 			return 0;
 		}
 
 		// Inject origin hidden fields on sales order creation form
 		if (isset($object->element) && $object->element === 'commande' && $action === 'create') {
-			$source_id = GETPOSTINT('returnmgmt_source_id');
+			$source_id = GETPOSTINT('customerreturn_source_id');
 			if ($source_id > 0) {
-				$this->resprints  = '<input type="hidden" name="origin" value="returnmgmt_returnrequest">';
+				$this->resprints  = '<input type="hidden" name="origin" value="customerreturn_customerreturn">';
 				$this->resprints .= '<input type="hidden" name="originid" value="'.$source_id.'">';
 			}
 			return 0;
@@ -142,7 +142,7 @@ class ActionsReturnmgmt
 	{
 		global $conf, $user;
 
-		if (!isModEnabled('returnmgmt')) {
+		if (!isModEnabled('customerreturn')) {
 			return 0;
 		}
 
@@ -151,7 +151,6 @@ class ActionsReturnmgmt
 
 	/**
 	 * Add "Create Return" button on shipment (expedition) card
-	 * Hook context: expeditioncard (confirmed at htdocs/expedition/card.php:2883)
 	 *
 	 * @param  array  $parameters Hook parameters
 	 * @param  object $object     Expedition object
@@ -163,7 +162,7 @@ class ActionsReturnmgmt
 	{
 		global $langs, $user;
 
-		if (!isModEnabled('returnmgmt')) {
+		if (!isModEnabled('customerreturn')) {
 			return 0;
 		}
 
@@ -172,9 +171,9 @@ class ActionsReturnmgmt
 			return 0;
 		}
 
-		if ($object->statut >= 1 && $user->hasRight('returnmgmt', 'returnrequest', 'write')) {
-			$langs->load('returnmgmt@returnmgmt');
-			$url = dol_buildpath('/returnmgmt/returnrequest_card.php', 1);
+		if ($object->statut >= 1 && $user->hasRight('customerreturn', 'customerreturn', 'write')) {
+			$langs->load('customerreturn@customerreturn');
+			$url = dol_buildpath('/customerreturn/customerreturn_card.php', 1);
 			$url .= '?action=create&fk_expedition='.$object->id;
 			print '<a class="butAction" href="'.$url.'">'.$langs->trans('CreateReturnFromShipment').'</a>';
 		}

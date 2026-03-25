@@ -16,13 +16,13 @@ if (!$res) { die("Include of main fails"); }
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
-dol_include_once('/returnmgmt/class/returnrequest.class.php');
-dol_include_once('/returnmgmt/lib/returnmgmt.lib.php');
+dol_include_once('/customerreturn/class/customerreturn.class.php');
+dol_include_once('/customerreturn/lib/customerreturn.lib.php');
 
-$langs->loadLangs(array('returnmgmt@returnmgmt', 'companies', 'products', 'other'));
+$langs->loadLangs(array('customerreturn@customerreturn', 'companies', 'products', 'other'));
 
 // Permissions
-if (!$user->hasRight('returnmgmt', 'returnrequest', 'read')) {
+if (!$user->hasRight('customerreturn', 'customerreturn', 'read')) {
 	accessforbidden();
 }
 
@@ -45,18 +45,6 @@ $search_note_public = GETPOST('search_note_public', 'alpha');
 $search_status      = GETPOST('search_status', 'intcomma');
 $search_date_start  = dol_mktime(0, 0, 0, GETPOSTINT('search_date_startmonth'), GETPOSTINT('search_date_startday'), GETPOSTINT('search_date_startyear'));
 $search_date_end    = dol_mktime(23, 59, 59, GETPOSTINT('search_date_endmonth'), GETPOSTINT('search_date_endday'), GETPOSTINT('search_date_endyear'));
-$search_user_assigned = GETPOSTINT('search_user_assigned');
-
-// Quick filter presets
-$preset = GETPOST('preset', 'alpha');
-if ($preset == 'myopen') {
-	$search_user_assigned = $user->id;
-	$search_status = '0,1,2,3,4';
-} elseif ($preset == 'pending') {
-	$search_status = (string) ReturnRequest::STATUS_PENDING;
-} elseif ($preset == 'awaiting') {
-	$search_status = (string) ReturnRequest::STATUS_APPROVED;
-}
 
 // Reset search
 if (GETPOST('button_removefilter_x', 'alpha') || GETPOST('button_removefilter.x', 'alpha') || GETPOST('button_removefilter', 'alpha')) {
@@ -67,18 +55,17 @@ if (GETPOST('button_removefilter_x', 'alpha') || GETPOST('button_removefilter.x'
 	$search_status = '';
 	$search_date_start = '';
 	$search_date_end = '';
-	$search_user_assigned = 0;
 }
 
 $form = new Form($db);
 
 // Build SQL
-$sql = "SELECT t.rowid, t.ref, t.fk_soc, t.label, t.date_return, t.date_creation";
+$sql = "SELECT t.rowid, t.ref, t.fk_soc, t.label, t.return_date, t.date_creation";
 $sql .= ", t.note_public, t.status";
 $sql .= ", s.nom as company_name";
-$sql .= " FROM ".MAIN_DB_PREFIX."returnmgmt_return as t";
+$sql .= " FROM ".MAIN_DB_PREFIX."customer_return as t";
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON t.fk_soc = s.rowid";
-$sql .= " WHERE t.entity IN (".getEntity('returnrequest').")";
+$sql .= " WHERE t.entity IN (".getEntity('customerreturn').")";
 
 if (!empty($search_ref)) {
 	$sql .= natural_search('t.ref', $search_ref);
@@ -106,9 +93,6 @@ if (!empty($search_date_start)) {
 if (!empty($search_date_end)) {
 	$sql .= " AND t.date_creation <= '".$db->idate($search_date_end)."'";
 }
-if ($search_user_assigned > 0) {
-	$sql .= " AND t.fk_user_assigned = ".((int) $search_user_assigned);
-}
 
 // Count total
 $sqlcount = preg_replace('/^SELECT.*FROM/s', 'SELECT COUNT(t.rowid) as total FROM', $sql);
@@ -133,7 +117,7 @@ $num = $db->num_rows($resql);
  * VIEW
  */
 
-llxHeader('', $langs->trans('ReturnRequestList'));
+llxHeader('', $langs->trans('CustomerReturnList'));
 
 $param = '';
 if (!empty($search_ref))           { $param .= '&search_ref='.urlencode($search_ref); }
@@ -141,24 +125,14 @@ if (!empty($search_label))         { $param .= '&search_label='.urlencode($searc
 if (!empty($search_company))       { $param .= '&search_company='.urlencode($search_company); }
 if (!empty($search_note_public))   { $param .= '&search_note_public='.urlencode($search_note_public); }
 if ($search_status !== '')         { $param .= '&search_status='.urlencode($search_status); }
-if ($search_user_assigned > 0)     { $param .= '&search_user_assigned='.$search_user_assigned; }
 
 $newcardbutton = '';
-if ($user->hasRight('returnmgmt', 'returnrequest', 'write')) {
-	$newcardbutton .= dolGetButtonTitle($langs->trans('NewReturnRequest'), '', 'fa fa-plus-circle', dol_buildpath('/returnmgmt/returnrequest_card.php', 1).'?action=create');
+if ($user->hasRight('customerreturn', 'customerreturn', 'write')) {
+	$newcardbutton .= dolGetButtonTitle($langs->trans('NewCustomerReturn'), '', 'fa fa-plus-circle', dol_buildpath('/customerreturn/customerreturn_card.php', 1).'?action=create');
 }
 
-// Quick filter buttons
-$quickfilters = '<div class="inline-block marginbottomonly">';
-$quickfilters .= '<a class="butAction butActionSmall" href="'.$_SERVER['PHP_SELF'].'?preset=myopen">'.$langs->trans('MyOpen').'</a> ';
-$quickfilters .= '<a class="butAction butActionSmall" href="'.$_SERVER['PHP_SELF'].'?preset=pending">'.$langs->trans('PendingApproval').'</a> ';
-$quickfilters .= '<a class="butAction butActionSmall" href="'.$_SERVER['PHP_SELF'].'?preset=awaiting">'.$langs->trans('AwaitingReceipt').'</a>';
-$quickfilters .= '</div>';
-
-print $quickfilters;
-
 print_barre_liste(
-	$langs->trans('ReturnRequestList'),
+	$langs->trans('CustomerReturnList'),
 	$page,
 	$_SERVER['PHP_SELF'],
 	$param,
@@ -167,7 +141,7 @@ print_barre_liste(
 	'',
 	$num,
 	$nbtotalofrecords,
-	'technic',
+	'dollyrevert',
 	0,
 	$newcardbutton,
 	'',
@@ -183,7 +157,7 @@ print '<input type="hidden" name="page" value="'.$page.'">';
 
 print '<table class="noborder centpercent">';
 
-// Header row — matches reference: Ref, Label, Return Date, Customer, Note (public), Status
+// Header row
 print '<tr class="liste_titre">';
 print_liste_field_titre('Ref',            $_SERVER['PHP_SELF'], 't.ref',           '', $param, '', $sortfield, $sortorder);
 print_liste_field_titre('Label',          $_SERVER['PHP_SELF'], 't.label',         '', $param, '', $sortfield, $sortorder);
@@ -216,19 +190,15 @@ print '<td><input type="text" name="search_company" class="flat maxwidth150" val
 print '<td><input type="text" name="search_note_public" class="flat maxwidth150" value="'.dol_escape_htmltag($search_note_public).'"></td>';
 // Status
 $statusarray = array(
-	ReturnRequest::STATUS_DRAFT => $langs->trans('Draft'),
-	ReturnRequest::STATUS_PENDING => $langs->trans('Pending'),
-	ReturnRequest::STATUS_APPROVED => $langs->trans('Approved'),
-	ReturnRequest::STATUS_RECEIVED => $langs->trans('Received'),
-	ReturnRequest::STATUS_PROCESSING => $langs->trans('Processing'),
-	ReturnRequest::STATUS_COMPLETED => $langs->trans('Completed'),
-	ReturnRequest::STATUS_REJECTED => $langs->trans('Rejected'),
+	CustomerReturn::STATUS_DRAFT => $langs->trans('Draft'),
+	CustomerReturn::STATUS_VALIDATED => $langs->trans('Validated'),
+	CustomerReturn::STATUS_CLOSED => $langs->trans('Closed'),
 );
 print '<td class="center">'.$form->selectarray('search_status', $statusarray, $search_status, 1, 0, 0, '', 0, 0, 0, '', 'maxwidth100 center').'</td>';
 print '</tr>';
 
 // Data rows
-$object_tmp = new ReturnRequest($db);
+$object_tmp = new CustomerReturn($db);
 $i = 0;
 while ($i < min($num, $limit)) {
 	$obj = $db->fetch_object($resql);
@@ -248,8 +218,8 @@ while ($i < min($num, $limit)) {
 	// Label
 	print '<td>'.dol_escape_htmltag($obj->label).'</td>';
 
-	// Return date (use date_return if set, else date_creation)
-	$display_date = !empty($obj->date_return) ? $obj->date_return : $obj->date_creation;
+	// Return date (use return_date if set, else date_creation)
+	$display_date = !empty($obj->return_date) ? $obj->return_date : $obj->date_creation;
 	print '<td class="center">'.dol_print_date($db->jdate($display_date), 'day').'</td>';
 
 	// Customer
