@@ -22,7 +22,7 @@ class modCustomerreturn extends DolibarrModules
 		$this->module_position = '90';
 		$this->name = preg_replace('/^mod/i', '', get_class($this));
 		$this->description = 'Customer merchandise return management with stock movement tracking and credit note generation';
-		$this->version = '2.0.3';
+		$this->version = '2.0.4';
 		$this->const_name = 'MAIN_MODULE_'.strtoupper($this->name);
 		$this->picto = 'dollyrevert';
 
@@ -100,11 +100,12 @@ class modCustomerreturn extends DolibarrModules
 		$this->menu = array();
 		$r = 0;
 
-		// Left: Customer Returns list (under Products > after Receptions)
+		// Left: Customer Returns heading (under Products > after Receptions)
 		$this->menu[$r++] = array(
 			'fk_menu'  => 'fk_mainmenu=products',
 			'type'     => 'left',
 			'titre'    => 'CustomerReturns',
+			'prefix'   => img_picto('', 'dollyrevert', 'class="paddingright pictofixedwidth"'),
 			'mainmenu' => 'products',
 			'leftmenu' => 'customerreturn_list',
 			'url'      => '/customerreturn/customerreturn_list.php',
