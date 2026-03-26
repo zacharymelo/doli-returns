@@ -94,3 +94,7 @@ Permission510102a = Create/edit customer returns
 Permission510103a = Delete customer returns
 Permission510104a = Validate customer returns
 Permission510105a = Close customer returns
+
+# Debug
+DebugMode = Debug Mode
+DebugModeDesc = Exposes diagnostic endpoint at /custom/customerreturn/ajax/debug.php for troubleshooting. Admin-only.

@@ -34,6 +34,8 @@ if ($action == 'update') {
 		if (!$res > 0) { $error++; }
 	}
 
+	dolibarr_set_const($db, 'CUSTOMERRETURN_DEBUG_MODE', GETPOST('CUSTOMERRETURN_DEBUG_MODE', 'alpha') ? '1' : '0', 'chaine', 0, '', $conf->entity);
+
 	if (!$error) {
 		setEventMessages($langs->trans('SetupSaved'), null, 'mesgs');
 	} else {
@@ -61,6 +63,13 @@ if (isModEnabled('stock')) {
 	print $formproduct->selectWarehouses(getDolGlobalInt('CUSTOMERRETURN_WAREHOUSE_DEFAULT'), 'CUSTOMERRETURN_WAREHOUSE_DEFAULT', '', 1);
 	print '</td></tr>';
 }
+
+// Debug mode
+print '<tr class="oddeven"><td>'.$langs->trans('DebugMode').'</td><td>';
+$chk_debug = getDolGlobalString('CUSTOMERRETURN_DEBUG_MODE') ? ' checked' : '';
+print '<input type="checkbox" name="CUSTOMERRETURN_DEBUG_MODE" value="1"'.$chk_debug.'>';
+print ' <span class="opacitymedium">'.$langs->trans('DebugModeDesc').'</span>';
+print '</td></tr>';
 
 print '</table>';
 
