@@ -126,7 +126,7 @@ if ($action == 'add' && $permwrite) {
 			// Optional warrantysvc integration: link to source service request
 			$from_svcrequest = GETPOSTINT('from_svcrequest');
 			if ($from_svcrequest > 0 && isModEnabled('warrantysvc')) {
-				$object->add_object_linked('svcrequest', $from_svcrequest);
+				$object->add_object_linked('warrantysvc_svcrequest', $from_svcrequest);
 			}
 
 			// Link to expedition

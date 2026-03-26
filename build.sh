@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
-VERSION=$(grep "\$this->version" module/core/modules/modCustomerreturn.class.php | sed "s/.*= '//;s/'.*//" )
+cd "$(dirname "$0")"
+VERSION=$(grep "\$this->version" module/core/modules/modCustomerReturn.class.php | sed "s/.*= '//;s/'.*//" )
 echo "Building customerreturn-${VERSION}.zip …"
 rm -rf /tmp/customerreturn-zip
 mkdir -p /tmp/customerreturn-zip/customerreturn
