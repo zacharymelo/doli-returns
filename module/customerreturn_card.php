@@ -270,6 +270,10 @@ if ($action == 'create') {
 		$sr = new SvcRequest($db);
 		if ($sr->fetch($from_svcrequest) > 0) {
 			if (empty($prefill_fk_soc)) { $prefill_fk_soc = $sr->fk_soc; }
+			// Auto-select the SR's linked shipment if available
+			if (empty($fk_expedition) && !empty($sr->fk_shipment)) {
+				$fk_expedition = (int) $sr->fk_shipment;
+			}
 		}
 	}
 
@@ -576,6 +580,7 @@ if ($action == 'create') {
 			container.innerHTML = "<p class=\"opacitymedium\">" + lblNoShipments + "</p>";
 			return;
 		}
+		var fromSR = "'.(int) $from_svcrequest.'";
 		var html = "<p class=\"opacitymedium\">" + lblSelectShip + "</p>";
 		html += "<div class=\"div-table-responsive-no-min\">";
 		html += "<table class=\"noborder centpercent\">";
@@ -583,15 +588,19 @@ if ($action == 'create') {
 		html += "<td>" + lblRef + "</td>";
 		html += "<td>" + lblDate + "</td>";
 		html += "<td>" + lblStatus + "</td>";
-		html += "<td class=\"right\">" + lblLines + "</td>";
+		html += "<td>" + lblLines + "</td>";
+		html += "<td></td>";
 		html += "</tr>";
 
 		data.forEach(function(ship, i) {
-			html += "<tr class=\"oddeven\" style=\"cursor:pointer;\" onclick=\"window.location=\'" + cardUrl + "?action=create&fk_expedition=" + ship.id + "\'\">";
-			html += "<td>" + escHtml(ship.ref) + "</td>";
+			var selectUrl = cardUrl + "?action=create&fk_expedition=" + ship.id;
+			if (fromSR > 0) selectUrl += "&from_svcrequest=" + fromSR;
+			html += "<tr class=\"oddeven\">";
+			html += "<td><a href=\"" + escHtml(ship.url) + "\" target=\"_blank\" title=\"Open shipment\">" + escHtml(ship.ref) + "</a></td>";
 			html += "<td>" + escHtml(ship.date) + "</td>";
 			html += "<td>" + escHtml(ship.status_label) + "</td>";
-			html += "<td class=\"right\">" + ship.nb_lines + "</td>";
+			html += "<td><span class=\"opacitymedium small\">" + escHtml(ship.lines_summary) + "</span></td>";
+			html += "<td class=\"right\"><a class=\"butAction small\" href=\"" + selectUrl + "\">Select</a></td>";
 			html += "</tr>";
 		});
 
