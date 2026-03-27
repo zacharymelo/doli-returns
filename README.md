@@ -57,6 +57,12 @@ When a return is moved to **Received** status, the module creates positive stock
 
 When a return is **Completed** with resolution type **Refund**, a **Create Credit Note** button appears. It traverses the link chain (shipment → order → invoice) and creates a credit note with the returned line items at original invoice pricing.
 
+### WarrantySvc integration (optional)
+
+If the [WarrantySvc RMA module](https://github.com/zacharymelo/RMA-Module) is installed and enabled, returns can be initiated directly from a service request. Passing `from_svcrequest={id}` in the URL pre-fills the customer from the service request and creates a bidirectional link between the return and the originating SR via `element_element`. This lets you trace the full chain: **Service Request → Return Request → Stock Movement / Credit Note**.
+
+No configuration is needed — the integration activates automatically when `warrantysvc` is enabled. The linked service request appears in the return's **Linked Objects** block, and vice versa.
+
 ### Permissions
 
 | ID | Permission |
