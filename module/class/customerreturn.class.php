@@ -10,6 +10,9 @@
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/customerreturn/class/customerreturnline.class.php';
 
+/**
+ * Class CustomerReturn — manages customer return documents and stock movements.
+ */
 class CustomerReturn extends CommonObject
 {
 	public $TRIGGER_PREFIX = 'CUSTOMERRETURN';
@@ -652,9 +655,9 @@ class CustomerReturn extends CommonObject
 		$langs->load('customerreturn@customerreturn');
 
 		$statusLabels = array(
-			self::STATUS_DRAFT     => array('short' => 'Draft',     'long' => 'StatusDraft',     'type' => 'status0'),
-			self::STATUS_VALIDATED => array('short' => 'Validated', 'long' => 'StatusValidated', 'type' => 'status4'),
-			self::STATUS_CLOSED    => array('short' => 'Closed',    'long' => 'StatusClosed',    'type' => 'status6'),
+			self::STATUS_DRAFT     => array('short' => 'CReturnDraft',     'long' => 'StatusDraft',     'type' => 'status0'),
+			self::STATUS_VALIDATED => array('short' => 'CReturnValidated', 'long' => 'StatusValidated', 'type' => 'status4'),
+			self::STATUS_CLOSED    => array('short' => 'CReturnClosed',    'long' => 'StatusClosed',    'type' => 'status6'),
 		);
 
 		if (!isset($statusLabels[$status])) {

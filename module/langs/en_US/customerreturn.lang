@@ -16,20 +16,20 @@ LinkToCustomerReturn = Link to Customer Return
 StatusDraft = Draft
 StatusValidated = Validated
 StatusClosed = Closed
-Draft = Draft
-Validated = Validated
-Closed = Closed
+CReturnDraft = Draft
+CReturnValidated = Validated
+CReturnClosed = Closed
 
 # Fields
-Warehouse = Warehouse
-Customer = Customer
-Product = Product
-SerialNumber = Serial Number
+CReturnWarehouse = Warehouse
+CReturnCustomer = Customer
+CReturnProduct = Product
+CReturnSerialNumber = Serial Number
 
 # Actions
-Validate = Validate
-Close = Close
-Reopen = Reopen
+CReturnValidate = Validate
+CReturnClose = Close
+CReturnReopen = Reopen
 
 # Confirmations
 ValidateCustomerReturn = Validate Customer Return
@@ -53,10 +53,10 @@ NumberingModel = Numbering Model
 
 # Shipment line picker
 SelectCustomerFirst = Select Customer First
-Shipment = Shipment
+CReturnShipment = Shipment
 ShipmentRef = Shipment Ref
 OrderRef = Order Ref
-Order = Order
+CReturnOrder = Order
 QtyOrdered = Qty Ordered
 QtyShipped = Qty Shipped
 QtyAlreadyReturned = Qty Already Returned
@@ -64,9 +64,9 @@ ReturnQty = Return Qty
 SelectItemsToReturn = Select
 NoShipmentsFound = No shipments found for this customer
 SelectAtLeastOneLine = Please select at least one item to return
-Description = Description
-Comment = Comment
-LotSerial = Lot/Serial
+CReturnDescription = Description
+CReturnComment = Comment
+CReturnLotSerial = Lot/Serial
 
 # Shipment-initiated returns
 CreateReturnFromShipment = Create Return
@@ -84,9 +84,9 @@ NoInvoiceLinked = No invoice linked to this return
 
 # Additional fields
 ReturnDate = Return Date
-Label = Label
-NotePublic = Note (public)
-NotePrivate = Note (private)
+CReturnLabel = Label
+CReturnNotePublic = Note (public)
+CReturnNotePrivate = Note (private)
 
 # Permissions
 Permission510101a = Read customer returns

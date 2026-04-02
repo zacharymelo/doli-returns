@@ -95,7 +95,7 @@ if ($action == 'add' && $permwrite) {
 	$toselect = GETPOST('toselect', 'array');
 
 	if (empty($object->fk_soc)) {
-		setEventMessages($langs->trans('ErrorFieldRequired', $langs->transnoentitiesaliases('Customer')), null, 'errors');
+		setEventMessages($langs->trans('ErrorFieldRequired', $langs->transnoentitiesaliases('CReturnCustomer')), null, 'errors');
 		$action = 'create';
 	} elseif (empty($toselect)) {
 		setEventMessages($langs->trans('SelectAtLeastOneLine'), null, 'errors');
@@ -329,19 +329,19 @@ if ($action == 'create') {
 		print '<table class="border centpercent tableforfieldcreate">';
 
 		// Shipment Ref (read-only)
-		print '<tr><td class="titlefieldcreate">'.$langs->trans('Shipment').'</td><td>';
+		print '<tr><td class="titlefieldcreate">'.$langs->trans('CReturnShipment').'</td><td>';
 		print $expedition->getNomUrl(1);
 		print '</td></tr>';
 
 		// Order Ref (read-only)
 		if (!empty($order_ref)) {
-			print '<tr><td>'.$langs->trans('Order').'</td><td>';
+			print '<tr><td>'.$langs->trans('CReturnOrder').'</td><td>';
 			print '<a href="'.$order_url.'">'.$order_ref.'</a>';
 			print '</td></tr>';
 		}
 
 		// Company (read-only)
-		print '<tr><td>'.$langs->trans('Customer').'</td><td>';
+		print '<tr><td>'.$langs->trans('CReturnCustomer').'</td><td>';
 		print $soc->getNomUrl(1);
 		print '</td></tr>';
 
@@ -351,17 +351,17 @@ if ($action == 'create') {
 		print '</td></tr>';
 
 		// Label
-		print '<tr><td>'.$langs->trans('Label').'</td><td>';
+		print '<tr><td>'.$langs->trans('CReturnLabel').'</td><td>';
 		print '<input type="text" name="label" class="minwidth300" value="'.dol_escape_htmltag(GETPOST('label', 'alpha')).'">';
 		print '</td></tr>';
 
 		// Notes
-		print '<tr><td>'.$langs->trans('NotePublic').'</td><td>';
+		print '<tr><td>'.$langs->trans('CReturnNotePublic').'</td><td>';
 		$doleditor = new DolEditor('note_public', GETPOST('note_public', 'restricthtml'), '', 150, 'dolibarr_notes', 'In', true, false, isModEnabled('fckeditor'), ROWS_5, '90%');
 		$doleditor->Create();
 		print '</td></tr>';
 
-		print '<tr><td>'.$langs->trans('NotePrivate').'</td><td>';
+		print '<tr><td>'.$langs->trans('CReturnNotePrivate').'</td><td>';
 		$doleditor = new DolEditor('note_private', GETPOST('note_private', 'restricthtml'), '', 150, 'dolibarr_notes', 'In', true, false, isModEnabled('fckeditor'), ROWS_5, '90%');
 		$doleditor->Create();
 		print '</td></tr>';
@@ -411,14 +411,14 @@ if ($action == 'create') {
 			print '<div class="div-table-responsive-no-min">';
 			print '<table class="noborder centpercent">';
 			print '<tr class="liste_titre">';
-			print '<td>'.$langs->trans('Product').'</td>';
+			print '<td>'.$langs->trans('CReturnProduct').'</td>';
 			print '<td class="right">'.$langs->trans('QtyOrdered').'</td>';
 			print '<td class="right">'.$langs->trans('QtyShipped').'</td>';
 			print '<td class="right">'.$langs->trans('QtyAlreadyReturned').'</td>';
 			print '<td class="center">'.$langs->trans('ReturnQty').'</td>';
-			print '<td>'.$langs->trans('Warehouse').'</td>';
-			print '<td>'.$langs->trans('Comment').'</td>';
-			print '<td>'.$langs->trans('LotSerial').'</td>';
+			print '<td>'.$langs->trans('CReturnWarehouse').'</td>';
+			print '<td>'.$langs->trans('CReturnComment').'</td>';
+			print '<td>'.$langs->trans('CReturnLotSerial').'</td>';
 			print '<td class="center">'.$langs->trans('Select').'</td>';
 			print '</tr>';
 
@@ -526,7 +526,6 @@ if ($action == 'create') {
 		});
 	});
 })();</script>';
-
 	} else {
 		// ----- Entry B: Standalone (no fk_expedition) -----
 		print load_fiche_titre($langs->trans('NewCustomerReturn'), '', 'object_dollyrevert');
@@ -546,7 +545,7 @@ if ($action == 'create') {
 		print '<table class="border centpercent tableforfieldcreate">';
 
 		// Customer
-		print '<tr><td class="titlefieldcreate fieldrequired">'.$langs->trans('Customer').'</td><td>';
+		print '<tr><td class="titlefieldcreate fieldrequired">'.$langs->trans('CReturnCustomer').'</td><td>';
 		print $form->select_company($prefill_fk_soc, 'fk_soc', '(s.client:IN:1,3)', 1, 0, 0, array(), 0, 'minwidth300');
 		print '</td></tr>';
 
@@ -635,10 +634,8 @@ if ($action == 'create') {
 	if (initSocEl && parseInt(initSocEl.value, 10) > 0) { loadShipments(); }
 })();</script>';
 	}
-}
-
-// ---------- EDIT FORM ----------
-elseif ($action == 'edit' && $object->id > 0 && $permwrite) {
+} elseif ($action == 'edit' && $object->id > 0 && $permwrite) {
+	// ---------- EDIT FORM ----------
 	$head = customerreturn_prepare_head($object);
 	print dol_get_fiche_head($head, 'card', $langs->trans('CustomerReturn'), -1, 'dollyrevert');
 
@@ -656,7 +653,7 @@ elseif ($action == 'edit' && $object->id > 0 && $permwrite) {
 	if ($object->fk_soc > 0) {
 		$soc = new Societe($db);
 		$soc->fetch($object->fk_soc);
-		print '<tr><td>'.$langs->trans('Customer').'</td><td>'.$soc->getNomUrl(1).'</td></tr>';
+		print '<tr><td>'.$langs->trans('CReturnCustomer').'</td><td>'.$soc->getNomUrl(1).'</td></tr>';
 		print '<input type="hidden" name="fk_soc" value="'.$object->fk_soc.'">';
 	}
 
@@ -664,11 +661,11 @@ elseif ($action == 'edit' && $object->id > 0 && $permwrite) {
 	if ($object->fk_expedition > 0) {
 		$expedition = new Expedition($db);
 		$expedition->fetch($object->fk_expedition);
-		print '<tr><td>'.$langs->trans('Shipment').'</td><td>'.$expedition->getNomUrl(1).'</td></tr>';
+		print '<tr><td>'.$langs->trans('CReturnShipment').'</td><td>'.$expedition->getNomUrl(1).'</td></tr>';
 	}
 
 	// Label
-	print '<tr><td>'.$langs->trans('Label').'</td><td>';
+	print '<tr><td>'.$langs->trans('CReturnLabel').'</td><td>';
 	print '<input type="text" name="label" class="minwidth300" value="'.dol_escape_htmltag($object->label).'">';
 	print '</td></tr>';
 
@@ -679,18 +676,18 @@ elseif ($action == 'edit' && $object->id > 0 && $permwrite) {
 
 	// Warehouse
 	if (isModEnabled('stock')) {
-		print '<tr><td>'.$langs->trans('Warehouse').'</td><td>';
+		print '<tr><td>'.$langs->trans('CReturnWarehouse').'</td><td>';
 		print $formproduct->selectWarehouses($object->fk_warehouse, 'fk_warehouse', '', 1);
 		print '</td></tr>';
 	}
 
 	// Notes
-	print '<tr><td>'.$langs->trans('NotePublic').'</td><td>';
+	print '<tr><td>'.$langs->trans('CReturnNotePublic').'</td><td>';
 	$doleditor = new DolEditor('note_public', $object->note_public, '', 150, 'dolibarr_notes', 'In', true, false, isModEnabled('fckeditor'), ROWS_5, '90%');
 	$doleditor->Create();
 	print '</td></tr>';
 
-	print '<tr><td>'.$langs->trans('NotePrivate').'</td><td>';
+	print '<tr><td>'.$langs->trans('CReturnNotePrivate').'</td><td>';
 	$doleditor = new DolEditor('note_private', $object->note_private, '', 150, 'dolibarr_notes', 'In', true, false, isModEnabled('fckeditor'), ROWS_5, '90%');
 	$doleditor->Create();
 	print '</td></tr>';
@@ -703,14 +700,14 @@ elseif ($action == 'edit' && $object->id > 0 && $permwrite) {
 		print '<div class="div-table-responsive-no-min">';
 		print '<table class="noborder centpercent">';
 		print '<tr class="liste_titre">';
-		print '<td>'.$langs->trans('Product').'</td>';
-		print '<td>'.$langs->trans('Description').'</td>';
-		print '<td>'.$langs->trans('SerialNumber').'</td>';
+		print '<td>'.$langs->trans('CReturnProduct').'</td>';
+		print '<td>'.$langs->trans('CReturnDescription').'</td>';
+		print '<td>'.$langs->trans('CReturnSerialNumber').'</td>';
 		print '<td class="right">'.$langs->trans('Qty').'</td>';
 		if (isModEnabled('stock')) {
-			print '<td>'.$langs->trans('Warehouse').'</td>';
+			print '<td>'.$langs->trans('CReturnWarehouse').'</td>';
 		}
-		print '<td>'.$langs->trans('Comment').'</td>';
+		print '<td>'.$langs->trans('CReturnComment').'</td>';
 		print '</tr>';
 		foreach ($object->lines as $line) {
 			print '<tr class="oddeven">';
@@ -746,11 +743,8 @@ elseif ($action == 'edit' && $object->id > 0 && $permwrite) {
 	print $form->buttonsSaveCancel();
 
 	print '</form>';
-}
-
-// ---------- VIEW ----------
-elseif ($object->id > 0) {
-
+} elseif ($object->id > 0) {
+	// ---------- VIEW ----------
 	// Confirmation dialogs
 	if ($action == 'validate') {
 		print $form->formconfirm($_SERVER['PHP_SELF'].'?id='.$object->id, $langs->trans('ValidateCustomerReturn'), $langs->trans('ConfirmValidateCustomerReturn'), 'confirm_validate', '', 0, 1);
@@ -808,14 +802,14 @@ elseif ($object->id > 0) {
 	if ($object->fk_soc > 0) {
 		$soc = new Societe($db);
 		$soc->fetch($object->fk_soc);
-		print '<tr><td>'.$langs->trans('Customer').'</td><td>'.$soc->getNomUrl(1).'</td></tr>';
+		print '<tr><td>'.$langs->trans('CReturnCustomer').'</td><td>'.$soc->getNomUrl(1).'</td></tr>';
 	}
 
 	// Shipment
 	if ($object->fk_expedition > 0) {
 		$expedition = new Expedition($db);
 		$expedition->fetch($object->fk_expedition);
-		print '<tr><td>'.$langs->trans('Shipment').'</td><td>'.$expedition->getNomUrl(1).'</td></tr>';
+		print '<tr><td>'.$langs->trans('CReturnShipment').'</td><td>'.$expedition->getNomUrl(1).'</td></tr>';
 
 		// Linked order
 		$sql_order = "SELECT el.fk_source, c.ref as order_ref";
@@ -827,7 +821,7 @@ elseif ($object->id > 0) {
 		$resql_order = $db->query($sql_order);
 		if ($resql_order && $db->num_rows($resql_order) > 0) {
 			$obj_order = $db->fetch_object($resql_order);
-			print '<tr><td>'.$langs->trans('Order').'</td><td>';
+			print '<tr><td>'.$langs->trans('CReturnOrder').'</td><td>';
 			print '<a href="'.DOL_URL_ROOT.'/commande/card.php?id='.$obj_order->fk_source.'">'.$obj_order->order_ref.'</a>';
 			print '</td></tr>';
 		}
@@ -835,7 +829,7 @@ elseif ($object->id > 0) {
 
 	// Label
 	if (!empty($object->label)) {
-		print '<tr><td>'.$langs->trans('Label').'</td><td>'.dol_escape_htmltag($object->label).'</td></tr>';
+		print '<tr><td>'.$langs->trans('CReturnLabel').'</td><td>'.dol_escape_htmltag($object->label).'</td></tr>';
 	}
 
 	// Date Return
@@ -848,7 +842,7 @@ elseif ($object->id > 0) {
 		require_once DOL_DOCUMENT_ROOT.'/product/stock/class/entrepot.class.php';
 		$warehouse = new Entrepot($db);
 		$warehouse->fetch($object->fk_warehouse);
-		print '<tr><td>'.$langs->trans('Warehouse').'</td><td>'.$warehouse->getNomUrl(1).'</td></tr>';
+		print '<tr><td>'.$langs->trans('CReturnWarehouse').'</td><td>'.$warehouse->getNomUrl(1).'</td></tr>';
 	}
 
 	// Date creation
@@ -864,14 +858,14 @@ elseif ($object->id > 0) {
 		print '<div class="div-table-responsive-no-min">';
 		print '<table class="noborder centpercent">';
 		print '<tr class="liste_titre">';
-		print '<td>'.$langs->trans('Product').'</td>';
-		print '<td>'.$langs->trans('Description').'</td>';
-		print '<td>'.$langs->trans('SerialNumber').'</td>';
+		print '<td>'.$langs->trans('CReturnProduct').'</td>';
+		print '<td>'.$langs->trans('CReturnDescription').'</td>';
+		print '<td>'.$langs->trans('CReturnSerialNumber').'</td>';
 		print '<td class="right">'.$langs->trans('Qty').'</td>';
 		if (isModEnabled('stock')) {
-			print '<td>'.$langs->trans('Warehouse').'</td>';
+			print '<td>'.$langs->trans('CReturnWarehouse').'</td>';
 		}
-		print '<td>'.$langs->trans('Comment').'</td>';
+		print '<td>'.$langs->trans('CReturnComment').'</td>';
 		print '</tr>';
 		foreach ($object->lines as $line) {
 			print '<tr class="oddeven">';
@@ -918,17 +912,17 @@ elseif ($object->id > 0) {
 
 	// Validate (triggers stock movement)
 	if ($object->status == CustomerReturn::STATUS_DRAFT && $permvalidate) {
-		print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=validate&token='.newToken().'">'.$langs->trans('Validate').'</a>';
+		print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=validate&token='.newToken().'">'.$langs->trans('CReturnValidate').'</a>';
 	}
 
 	// Close
 	if ($object->status == CustomerReturn::STATUS_VALIDATED && $permclose) {
-		print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=close&token='.newToken().'">'.$langs->trans('Close').'</a>';
+		print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=close&token='.newToken().'">'.$langs->trans('CReturnClose').'</a>';
 	}
 
 	// Reopen
 	if ($object->status == CustomerReturn::STATUS_VALIDATED && $permvalidate) {
-		print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=reopen&token='.newToken().'">'.$langs->trans('Reopen').'</a>';
+		print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=reopen&token='.newToken().'">'.$langs->trans('CReturnReopen').'</a>';
 	}
 
 	// Create Credit Note

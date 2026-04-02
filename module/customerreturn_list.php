@@ -120,11 +120,11 @@ $num = $db->num_rows($resql);
 llxHeader('', $langs->trans('CustomerReturnList'));
 
 $param = '';
-if (!empty($search_ref))           { $param .= '&search_ref='.urlencode($search_ref); }
-if (!empty($search_label))         { $param .= '&search_label='.urlencode($search_label); }
-if (!empty($search_company))       { $param .= '&search_company='.urlencode($search_company); }
-if (!empty($search_note_public))   { $param .= '&search_note_public='.urlencode($search_note_public); }
-if ($search_status !== '')         { $param .= '&search_status='.urlencode($search_status); }
+if (!empty($search_ref)) { $param .= '&search_ref='.urlencode($search_ref); }
+if (!empty($search_label)) { $param .= '&search_label='.urlencode($search_label); }
+if (!empty($search_company)) { $param .= '&search_company='.urlencode($search_company); }
+if (!empty($search_note_public)) { $param .= '&search_note_public='.urlencode($search_note_public); }
+if ($search_status !== '') { $param .= '&search_status='.urlencode($search_status); }
 
 $newcardbutton = '';
 if ($user->hasRight('customerreturn', 'customerreturn', 'write')) {
@@ -160,10 +160,10 @@ print '<table class="noborder centpercent">';
 // Header row
 print '<tr class="liste_titre">';
 print_liste_field_titre('Ref',            $_SERVER['PHP_SELF'], 't.ref',           '', $param, '', $sortfield, $sortorder);
-print_liste_field_titre('Label',          $_SERVER['PHP_SELF'], 't.label',         '', $param, '', $sortfield, $sortorder);
+print_liste_field_titre('CReturnLabel',          $_SERVER['PHP_SELF'], 't.label',         '', $param, '', $sortfield, $sortorder);
 print_liste_field_titre('ReturnDate',     $_SERVER['PHP_SELF'], 't.date_creation', '', $param, '', $sortfield, $sortorder, 'center ');
-print_liste_field_titre('Customer',       $_SERVER['PHP_SELF'], 's.nom',           '', $param, '', $sortfield, $sortorder);
-print_liste_field_titre('NotePublic',     $_SERVER['PHP_SELF'], 't.note_public',   '', $param, '', $sortfield, $sortorder);
+print_liste_field_titre('CReturnCustomer',       $_SERVER['PHP_SELF'], 's.nom',           '', $param, '', $sortfield, $sortorder);
+print_liste_field_titre('CReturnNotePublic',     $_SERVER['PHP_SELF'], 't.note_public',   '', $param, '', $sortfield, $sortorder);
 print_liste_field_titre('Status',         $_SERVER['PHP_SELF'], 't.status',        '', $param, '', $sortfield, $sortorder, 'center ');
 print '</tr>';
 
@@ -190,9 +190,9 @@ print '<td><input type="text" name="search_company" class="flat maxwidth150" val
 print '<td><input type="text" name="search_note_public" class="flat maxwidth150" value="'.dol_escape_htmltag($search_note_public).'"></td>';
 // Status
 $statusarray = array(
-	CustomerReturn::STATUS_DRAFT => $langs->trans('Draft'),
-	CustomerReturn::STATUS_VALIDATED => $langs->trans('Validated'),
-	CustomerReturn::STATUS_CLOSED => $langs->trans('Closed'),
+	CustomerReturn::STATUS_DRAFT => $langs->trans('CReturnDraft'),
+	CustomerReturn::STATUS_VALIDATED => $langs->trans('CReturnValidated'),
+	CustomerReturn::STATUS_CLOSED => $langs->trans('CReturnClosed'),
 );
 print '<td class="center">'.$form->selectarray('search_status', $statusarray, $search_status, 1, 0, 0, '', 0, 0, 0, '', 'maxwidth100 center').'</td>';
 print '</tr>';
