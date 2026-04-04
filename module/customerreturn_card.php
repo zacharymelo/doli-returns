@@ -899,11 +899,8 @@ if ($action == 'create') {
 	print dol_get_fiche_end();
 
 	// Linked objects
-	print '<!-- DEBUG: before fetchObjectLinked -->';
 	$object->fetchObjectLinked();
-	print '<!-- DEBUG: after fetchObjectLinked -->';
-	print $object->showLinkedObjectBlock();
-	print '<!-- DEBUG: after showLinkedObjectBlock -->';
+	$somethingshown = $form->showLinkedObjectBlock($object);
 
 	// Action buttons
 	print '<div class="tabsAction">';

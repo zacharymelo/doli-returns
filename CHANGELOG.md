@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.2.5] - 2026-04-04
+
+### Fixed
+- Fix fatal error on card view — use `$form->showLinkedObjectBlock($object)` instead of `$object->showLinkedObjectBlock()` which doesn't exist in Dolibarr
+
 ## [2.2.4] - 2026-04-04
 
 ### Fixed
