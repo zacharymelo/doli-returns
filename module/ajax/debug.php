@@ -332,6 +332,58 @@ if ($mode === 'sql') {
 
 
 // =====================================================================
+// CLEANUP — remove orphaned element_element rows for deleted returns
+// =====================================================================
+if ($mode === 'cleanup') {
+	print "--- CLEANUP ORPHANED LINKS ---\n";
+	$elTypes = "('customerreturn', 'customerreturn_customerreturn')";
+
+	// Find orphaned target rows
+	$sql = "SELECT ee.rowid, ee.fk_source, ee.sourcetype, ee.fk_target, ee.targettype FROM ".MAIN_DB_PREFIX."element_element ee WHERE ee.targettype IN ".$elTypes." AND NOT EXISTS (SELECT 1 FROM ".MAIN_DB_PREFIX."customer_return cr WHERE cr.rowid = ee.fk_target)";
+	$resql = $db->query($sql);
+	$orphans = array();
+	if ($resql) {
+		while ($obj = $db->fetch_object($resql)) {
+			$orphans[] = $obj;
+		}
+	}
+
+	// Find orphaned source rows
+	$sql2 = "SELECT ee.rowid, ee.fk_source, ee.sourcetype, ee.fk_target, ee.targettype FROM ".MAIN_DB_PREFIX."element_element ee WHERE ee.sourcetype IN ".$elTypes." AND NOT EXISTS (SELECT 1 FROM ".MAIN_DB_PREFIX."customer_return cr WHERE cr.rowid = ee.fk_source)";
+	$resql2 = $db->query($sql2);
+	if ($resql2) {
+		while ($obj = $db->fetch_object($resql2)) {
+			$orphans[] = $obj;
+		}
+	}
+
+	if (empty($orphans)) {
+		print "  No orphaned links found.\n";
+	} else {
+		print "  Found ".count($orphans)." orphaned link(s):\n";
+		foreach ($orphans as $o) {
+			print "    [rowid=$o->rowid] source=$o->fk_source ($o->sourcetype) → target=$o->fk_target ($o->targettype)\n";
+		}
+		if (GETPOST('confirm', 'alpha') === 'yes') {
+			$ids = array();
+			foreach ($orphans as $o) {
+				$ids[] = (int) $o->rowid;
+			}
+			$del = "DELETE FROM ".MAIN_DB_PREFIX."element_element WHERE rowid IN (".implode(',', $ids).")";
+			if ($db->query($del)) {
+				print "  DELETED ".count($ids)." orphaned row(s).\n";
+			} else {
+				print "  DELETE ERROR: ".$db->lasterror()."\n";
+			}
+		} else {
+			print "\n  To delete, add &confirm=yes to the URL.\n";
+		}
+	}
+	print "\n";
+}
+
+
+// =====================================================================
 // TRIGGERS
 // =====================================================================
 if ($mode === 'triggers' || $run_all) {
