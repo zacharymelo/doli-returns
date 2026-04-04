@@ -924,8 +924,8 @@ if ($action == 'create') {
 		print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=close&token='.newToken().'">'.$langs->trans('CReturnClose').'</a>';
 	}
 
-	// Reopen
-	if ($object->status == CustomerReturn::STATUS_VALIDATED && $permvalidate) {
+	// Reopen (from Validated or Closed — reverses stock movements)
+	if (($object->status == CustomerReturn::STATUS_VALIDATED || $object->status == CustomerReturn::STATUS_CLOSED) && $permvalidate) {
 		print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=reopen&token='.newToken().'">'.$langs->trans('CReturnReopen').'</a>';
 	}
 

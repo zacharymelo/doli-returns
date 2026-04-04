@@ -532,8 +532,8 @@ class CustomerReturn extends CommonObject
 	 */
 	public function reopen($user, $notrigger = 0)
 	{
-		if ($this->status != self::STATUS_VALIDATED) {
-			$this->error = 'ErrorCustomerReturnNotValidated';
+		if ($this->status != self::STATUS_VALIDATED && $this->status != self::STATUS_CLOSED) {
+			$this->error = 'ErrorCustomerReturnNotValidatedOrClosed';
 			return -1;
 		}
 
@@ -541,17 +541,62 @@ class CustomerReturn extends CommonObject
 
 		$this->db->begin();
 
-		$sql = "UPDATE ".MAIN_DB_PREFIX."customer_return SET";
-		$sql .= " status = ".self::STATUS_DRAFT;
-		$sql .= " WHERE rowid = ".((int) $this->id);
+		// Reverse stock movements created by validate()
+		if (!$error && isModEnabled('stock')) {
+			require_once DOL_DOCUMENT_ROOT.'/product/stock/class/mouvementstock.class.php';
 
-		if (!$this->db->query($sql)) {
-			$error++;
-			$this->errors[] = 'Error '.$this->db->lasterror();
+			if (empty($this->lines)) {
+				$this->fetchLines();
+			}
+
+			global $langs;
+			$langs->load('customerreturn@customerreturn');
+
+			foreach ($this->lines as $line) {
+				if ($line->fk_product > 0 && $line->qty > 0) {
+					$warehouse_id = $line->fk_entrepot > 0 ? $line->fk_entrepot : $this->fk_warehouse;
+					if ($warehouse_id > 0) {
+						$mouv = new MouvementStock($this->db);
+						$mouv->setOrigin($this->element, $this->id);
+						$result = $mouv->livraison(
+							$user,
+							$line->fk_product,
+							$warehouse_id,
+							$line->qty,
+							0,
+							$langs->trans('ReturnReopened', $this->ref),
+							'',
+							'',
+							$line->serial_number ? $line->serial_number : ''
+						);
+						if ($result < 0) {
+							$error++;
+							$this->errors[] = $mouv->error;
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		// Update status to DRAFT
+		if (!$error) {
+			$sql = "UPDATE ".MAIN_DB_PREFIX."customer_return SET";
+			$sql .= " status = ".self::STATUS_DRAFT;
+			$sql .= ", date_validation = NULL, fk_user_valid = NULL";
+			$sql .= ", date_closed = NULL, fk_user_close = NULL";
+			$sql .= " WHERE rowid = ".((int) $this->id);
+
+			if (!$this->db->query($sql)) {
+				$error++;
+				$this->errors[] = 'Error '.$this->db->lasterror();
+			}
 		}
 
 		if (!$error) {
 			$this->status = self::STATUS_DRAFT;
+			$this->date_validation = null;
+			$this->date_closed = null;
 		}
 
 		if (!$error && !$notrigger) {

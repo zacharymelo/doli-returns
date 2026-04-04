@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.3.0] - 2026-04-04
+
+### Added
+- Reopen with stock reversal — reopening a return calls `MouvementStock::livraison()` to remove stock that was added on validate
+- Reopen allowed from both Validated and Closed statuses
+- Confirmation dialog warns that stock movements will be reversed
+- Clears validation and close dates/users on reopen
+
 ## [2.2.8] - 2026-04-04
 
 ### Fixed

@@ -37,13 +37,14 @@ ConfirmValidateCustomerReturn = Are you sure you want to validate this customer 
 CloseCustomerReturn = Close Customer Return
 ConfirmCloseCustomerReturn = Are you sure you want to close this customer return?
 ReopenCustomerReturn = Reopen Customer Return
-ConfirmReopenCustomerReturn = Are you sure you want to reopen this customer return to draft?
+ConfirmReopenCustomerReturn = Are you sure you want to reopen this customer return to draft? Stock movements will be reversed.
 DeleteCustomerReturn = Delete Customer Return
 ConfirmDeleteCustomerReturn = Are you sure you want to delete this customer return?
 
 # Errors
 ErrorCustomerReturnNotDraft = Customer return is not in draft status
 ErrorCustomerReturnNotValidated = Customer return is not in validated status
+ErrorCustomerReturnNotValidatedOrClosed = Customer return must be validated or closed to reopen
 ErrorFailedToGetNextRef = Failed to generate next reference number
 
 # Admin setup
@@ -71,6 +72,7 @@ CReturnLotSerial = Lot/Serial
 # Shipment-initiated returns
 CreateReturnFromShipment = Create Return
 ReturnValidated = Return %s validated
+ReturnReopened = Return %s reopened (stock reversed)
 SelectShipment = Select a shipment
 CustomerShipments = Shipments for this customer
 SelectShipmentToContinue = Select a shipment to continue
