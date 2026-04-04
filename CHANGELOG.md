@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.2.7] - 2026-04-04
+
+### Fixed
+- Fix notes tab saving — use Dolibarr's actions_setnotes.inc.php instead of custom save handler
+
 ## [2.2.6] - 2026-04-04
 
 ### Fixed

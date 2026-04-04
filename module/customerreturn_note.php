@@ -41,14 +41,8 @@ if ($id > 0 || !empty($ref)) {
 }
 
 // Actions
-if ($action == 'update_note_public' && $permwrite) {
-	$object->note_public = GETPOST('note_public', 'restricthtml');
-	$object->update($user, 1);
-}
-if ($action == 'update_note_private' && $permwrite) {
-	$object->note_private = GETPOST('note_private', 'restricthtml');
-	$object->update($user, 1);
-}
+$permissionnote = $permwrite;
+include DOL_DOCUMENT_ROOT.'/core/actions_setnotes.inc.php';
 
 // View
 llxHeader('', $langs->trans('CustomerReturn'));
