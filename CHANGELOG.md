@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.2.6] - 2026-04-04
+
+### Fixed
+- Fix notes tab — set $permissionnote so edit/save buttons appear
+
 ## [2.2.5] - 2026-04-04
 
 ### Fixed

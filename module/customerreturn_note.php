@@ -63,6 +63,7 @@ if ($object->id > 0) {
 	print '<div class="fichecenter">';
 
 	$cssclass = 'titlefield';
+	$permissionnote = $permwrite;
 	include DOL_DOCUMENT_ROOT.'/core/tpl/notes.tpl.php';
 
 	print '</div>';
