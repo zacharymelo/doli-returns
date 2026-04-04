@@ -7,6 +7,11 @@
  * (at your option) any later version.
  */
 
+/**
+ * Class ActionsCustomerreturn
+ *
+ * Hook actions for the customerreturn module
+ */
 class ActionsCustomerreturn
 {
 	public $db;
@@ -85,14 +90,7 @@ class ActionsCustomerreturn
 				'enabled' => 1,
 				'perms'   => 1,
 				'label'   => 'LinkToCustomerReturn',
-				'sql'     => "SELECT s.rowid as socid, s.nom as name, s.client,"
-					." t.rowid, t.ref"
-					." FROM ".MAIN_DB_PREFIX."societe as s,"
-					." ".MAIN_DB_PREFIX."customer_return as t"
-					." WHERE t.fk_soc = s.rowid"
-					." AND t.fk_soc IN (".$sanitized.")"
-					." AND t.entity IN (".getEntity('customerreturn').")"
-					." ORDER BY t.ref",
+				'sql'     => "SELECT s.rowid as socid, s.nom as name, s.client, t.rowid, t.ref FROM ".MAIN_DB_PREFIX."societe as s, ".MAIN_DB_PREFIX."customer_return as t WHERE t.fk_soc = s.rowid AND t.fk_soc IN (".$sanitized.") AND t.entity IN (".getEntity('customerreturn').") ORDER BY t.ref",
 			);
 		}
 

@@ -9,8 +9,18 @@
 
 include_once DOL_DOCUMENT_ROOT.'/core/modules/DolibarrModules.class.php';
 
+/**
+ * Class modCustomerreturn
+ *
+ * Module descriptor for the customerreturn module
+ */
 class modCustomerreturn extends DolibarrModules
 {
+	/**
+	 * Constructor
+	 *
+	 * @param DoliDB $db Database handler
+	 */
 	public function __construct($db)
 	{
 		global $langs, $conf;
@@ -22,7 +32,7 @@ class modCustomerreturn extends DolibarrModules
 		$this->module_position = '90';
 		$this->name = preg_replace('/^mod/i', '', get_class($this));
 		$this->description = 'Customer merchandise return management with stock movement tracking and credit note generation';
-		$this->version = '2.2.0';
+		$this->version = '2.2.1';
 		$this->const_name = 'MAIN_MODULE_'.strtoupper($this->name);
 		$this->picto = 'dollyrevert';
 
@@ -151,6 +161,12 @@ class modCustomerreturn extends DolibarrModules
 		);
 	}
 
+	/**
+	 * Function called when module is enabled
+	 *
+	 * @param  string $options Options when enabling module
+	 * @return int             1 if OK, 0 if KO
+	 */
 	public function init($options = '')
 	{
 		$result = $this->_load_tables('/customerreturn/sql/');
@@ -164,6 +180,12 @@ class modCustomerreturn extends DolibarrModules
 		return $this->_init(array(), $options);
 	}
 
+	/**
+	 * Function called when module is disabled
+	 *
+	 * @param  string $options Options when disabling module
+	 * @return int             1 if OK, 0 if KO
+	 */
 	public function remove($options = '')
 	{
 		return $this->_remove(array(), $options);

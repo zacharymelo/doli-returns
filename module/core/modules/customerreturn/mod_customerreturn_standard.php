@@ -9,6 +9,11 @@
 
 require_once DOL_DOCUMENT_ROOT.'/custom/customerreturn/core/modules/customerreturn/modules_customerreturn.php';
 
+/**
+ * Class mod_customerreturn_standard
+ *
+ * Standard numbering model for customer returns
+ */
 class mod_customerreturn_standard extends ModeleNumRefCustomerreturn
 {
 	public $version = '1.0.0';

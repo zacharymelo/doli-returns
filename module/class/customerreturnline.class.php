@@ -9,6 +9,11 @@
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobjectline.class.php';
 
+/**
+ * Class CustomerReturnLine
+ *
+ * Line object for a customer return
+ */
 class CustomerReturnLine extends CommonObjectLine
 {
 	public $element = 'customerreturnline';

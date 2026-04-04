@@ -10,6 +10,11 @@
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonnumrefgenerator.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/commondocgenerator.class.php';
 
+/**
+ * Class ModeleNumRefCustomerreturn
+ *
+ * Parent class for numbering models of customer returns
+ */
 abstract class ModeleNumRefCustomerreturn extends CommonNumRefGenerator
 {
 	/**
@@ -29,6 +34,11 @@ abstract class ModeleNumRefCustomerreturn extends CommonNumRefGenerator
 	abstract public function getExample();
 }
 
+/**
+ * Class ModelePDFCustomerreturn
+ *
+ * Parent class for PDF generation models of customer returns
+ */
 abstract class ModelePDFCustomerreturn extends CommonDocGenerator
 {
 	/**
