@@ -1,177 +1,116 @@
-# ReturnMgmt — Dolibarr Product Return Management
+# Customer Returns -- Merchandise Return Management for Dolibarr
 
-Custom Dolibarr module for managing product returns with refund, exchange, repair, and rejection workflows.
+**Version 2.2.1** | [GitHub Repository](https://github.com/zacharymelo/doli-returns) | License: GPL-3.0
+
+## Overview
+
+Customer Returns adds a complete merchandise return workflow to Dolibarr. Create returns directly from shipments, track quantities per line, receive items back into specific warehouses and lots, and generate credit notes -- all without leaving your Dolibarr instance. The module appears in the left sidebar under **Products** for easy access.
+
+## Features
+
+### Create Returns from Shipments
+
+Start a return by clicking "Create Return" on any completed shipment card. The system pulls in all shipped lines so you can choose exactly which items and quantities are being returned -- no need to re-enter product details.
+
+### Per-Line Quantity Tracking
+
+Select individual lines from the original shipment and specify the exact quantity being returned for each. Partial returns are fully supported. The system enforces maximums so you cannot return more than was shipped.
+
+### Per-Line Warehouse and Lot Selection
+
+When receiving returned items, choose the destination warehouse and lot/serial number for each line individually. This gives you precise control over where returned stock is placed in your inventory.
+
+### Stock Movements on Receive
+
+When a return is marked as received, stock movements are automatically created to add the returned quantities back into the selected warehouses. Your inventory levels update immediately with full traceability -- the stock movement log shows the return reference as the origin document.
+
+### Credit Note Generation
+
+Generate a credit note directly from a completed return. The system traverses the link chain (shipment to order to invoice) and creates a credit note with the returned line items at the original invoice pricing. Review and validate the credit note to complete the financial side of the return.
+
+### 3-Status Lifecycle
+
+Each return follows a simple lifecycle:
+
+1. **Draft** -- The return has been created and can still be edited. Add or remove lines, adjust quantities, and select warehouses.
+2. **Validated** -- The return is confirmed and locked for editing. It is now awaiting receipt of goods.
+3. **Received** -- Items have been received, stock movements have been processed, and a credit note can be generated.
+
+### Notes
+
+Add internal notes to any return for record-keeping, communication with warehouse staff, or audit purposes.
+
+### Menu Location
+
+Customer Returns appears in the left sidebar under **Products**, alongside other product- and stock-related features. From there you can access the return list, create new returns, and manage existing ones.
 
 ## Requirements
 
-- Dolibarr **16.0+**
-- PHP **7.0+**
-- Modules enabled: **Third Parties**, **Products**, **Stocks**
+| Requirement | Details |
+|---|---|
+| Dolibarr | Version 16 or higher |
+| PHP | Version 7.0 or higher |
+| **Required modules** | Third Parties, Products, Stock, Shipments |
+| **Optional modules** | WarrantySvc (enables RMA-initiated returns) |
 
-## Install
+## Installation
 
-### Upload via Dolibarr UI
+1. Download the latest `.zip` file from the [GitHub Releases](https://github.com/zacharymelo/doli-returns/releases) page
+2. Log in to your Dolibarr instance as an administrator
+3. Navigate to **Home > Setup > Modules/Applications**
+4. Click the **Deploy external module** button at the top of the page
+5. Upload the `.zip` file you downloaded
+6. Find "Customer Returns" in the module list and click the toggle to **enable** it
+7. Click the gear icon to open the **Admin Setup** page and configure the module
 
-1. Download `returnmgmt-x.y.z.zip` from [Releases](https://github.com/zacharymelo/doli-returns/releases) or build it (see below)
-2. Go to **Home → Setup → Modules/Applications**
-3. Click **Deploy/install an external app/module**
-4. Upload the zip — top-level directory must be `returnmgmt/`
-5. Activate the module and assign permissions
+## Configuration
 
-### Manual install
+After enabling the module, go to the admin setup page to configure:
 
-Copy the `module/` contents into your Dolibarr custom directory:
+- **Return Window (Days)** -- The number of days after shipment during which a return is allowed. Returns requested outside this window will be flagged.
+- **Auto-Approve Toggle** -- When enabled, validated returns are automatically approved without requiring a separate approval step.
+- **Require Tracking Number** -- When enabled, a tracking number must be entered before a return can be validated. Useful for tracking inbound packages from customers.
+- **WarrantySvc Integration Toggle** -- When enabled, returns can be initiated from WarrantySvc service requests, linking the return to an RMA case for end-to-end traceability.
 
-```
-cp -r module/ /path/to/dolibarr/htdocs/custom/returnmgmt/
-```
+## Usage Guide
 
-## Dev environment
+### Creating a Return from a Shipment
 
-```bash
-docker compose up -d
-```
+1. Navigate to a completed shipment (go to **Shipments** in the left menu and open the shipment)
+2. Click the **Create Return** button on the shipment card
+3. The system pre-fills the return form with all lines from the shipment, showing quantity ordered, quantity shipped, and quantity already returned
+4. For each line, enter the quantity being returned. Set a line to zero to exclude it.
+5. Save the return as a Draft
 
-Dolibarr runs at `http://localhost:8080` (admin/admin). The `module/` directory is bind-mounted to `/var/www/html/custom/returnmgmt` — edits are live.
+You can also create a return from the Returns menu by clicking "New Return Request," selecting a customer, then choosing a shipment from the list.
 
-## Module overview
+### Selecting Lines and Quantities
 
-### Workflow
+On the Draft return, review each line. Adjust return quantities as needed. For each line, select the destination warehouse where the returned item should be stocked, and optionally choose the lot or serial number. Once everything looks correct, validate the return.
 
-```
-DRAFT → PENDING → APPROVED → RECEIVED → PROCESSING → COMPLETED
-                    ↘ REJECTED
-```
+### Receiving Items
 
-### Create a return
+1. Open a validated return
+2. Confirm that the items have arrived at your facility
+3. Click **Receive** to process the return
+4. Stock movements are created automatically for each line, adding the returned quantities into the selected warehouses
+5. The return moves to the Received status
 
-**From a shipment card:** Click **Create Return** on any validated shipment. The form pre-fills the source shipment, linked order, and customer. Line items show qty ordered, qty shipped, qty already returned, and a return qty input with per-line warehouse and lot/serial selection.
+### Credit Note Creation
 
-**Standalone:** Navigate to Returns → New Return Request. Select a customer, then pick a shipment from the list.
+Once a return is in the Received status, click the **Create Credit Note** button. The system generates a credit note pre-filled with the returned product lines at their original invoice prices. Review the credit note and validate it to issue the credit to the customer.
 
-### Stock movements
+## Optional Integrations
 
-When a return is moved to **Received** status, the module creates positive stock movements (`MouvementStock::reception()`) for each return line into the selected warehouse. The stock movement log shows the return ref as the origin document.
+### WarrantySvc
 
-### Credit notes
+When the [WarrantySvc](https://github.com/zacharymelo/Dolibarr-Warranties) module is installed and the integration toggle is enabled in admin setup, returns can be initiated directly from service requests. This connects the return process to the RMA workflow so warranty-related returns are tracked from the initial service request through stock receipt and credit note. The linked service request appears in the return's "Linked Objects" block, and vice versa.
 
-When a return is **Completed** with resolution type **Refund**, a **Create Credit Note** button appears. It traverses the link chain (shipment → order → invoice) and creates a credit note with the returned line items at original invoice pricing.
+## Screenshots
 
-### WarrantySvc integration (optional)
-
-If the [WarrantySvc RMA module](https://github.com/zacharymelo/RMA-Module) is installed and enabled, returns can be initiated directly from a service request. Passing `from_svcrequest={id}` in the URL pre-fills the customer from the service request and creates a bidirectional link between the return and the originating SR via `element_element`. This lets you trace the full chain: **Service Request → Return Request → Stock Movement / Credit Note**.
-
-No configuration is needed — the integration activates automatically when `warrantysvc` is enabled. The linked service request appears in the return's **Linked Objects** block, and vice versa.
-
-### Permissions
-
-| ID | Permission |
-|----|------------|
-| 520001 | Read return requests |
-| 520002 | Create/edit return requests |
-| 520003 | Delete return requests |
-| 520004 | Approve or reject return requests |
-| 520005 | Complete/close return requests |
-
-### Setup
-
-**Home → Setup → ReturnMgmt Setup**
-
-- Return window (days)
-- Default receiving warehouse
-- Auto-approve returns
-- Require tracking number before receive
-- Customer notifications on approve/complete
-- Numbering model
-
-## File structure
-
-```
-module/
-├── admin/setup.php
-├── ajax/
-│   ├── customer_shipments.php
-│   └── shipment_lines.php
-├── class/
-│   ├── actions_returnmgmt.class.php
-│   ├── returnrequest.class.php
-│   └── returnrequestline.class.php
-├── core/
-│   ├── modules/
-│   │   ├── modReturnmgmt.class.php
-│   │   └── returnmgmt/
-│   │       ├── mod_returnmgmt_standard.php
-│   │       └── modules_returnmgmt.php
-│   └── triggers/
-│       └── interface_99_modReturnmgmt_ReturnmgmtTrigger.class.php
-├── langs/en_US/returnmgmt.lang
-├── lib/returnmgmt.lib.php
-├── sql/
-│   ├── llx_returnmgmt_return.sql
-│   ├── llx_returnmgmt_return.key.sql
-│   ├── llx_returnmgmt_return_line.sql
-│   ├── llx_returnmgmt_return_line.key.sql
-│   ├── llx_returnmgmt_return_extrafields.sql
-│   ├── llx_returnmgmt_return_extrafields.key.sql
-│   └── update_1.2.0.sql
-├── returnrequest_card.php
-├── returnrequest_list.php
-└── returnrequest_note.php
-```
-
-## Building the zip
-
-The zip must have `returnmgmt/` as the top-level directory (not `module/`):
-
-```bash
-ln -sfn module returnmgmt
-zip -r returnmgmt-1.2.0.zip returnmgmt/
-rm returnmgmt
-```
-
-## Upgrading from 1.1.x
-
-After uploading v1.2.0, disable and re-enable the module. This runs `_load_tables()` which executes `update_1.2.0.sql` to add new columns. Alternatively, run the migration SQL manually:
-
-```sql
-ALTER TABLE llx_returnmgmt_return ADD COLUMN fk_expedition INTEGER;
-ALTER TABLE llx_returnmgmt_return ADD COLUMN label VARCHAR(255);
-ALTER TABLE llx_returnmgmt_return ADD COLUMN date_return DATETIME;
-ALTER TABLE llx_returnmgmt_return_line ADD COLUMN fk_expedition INTEGER;
-ALTER TABLE llx_returnmgmt_return_line ADD COLUMN fk_expeditiondet INTEGER;
-ALTER TABLE llx_returnmgmt_return_line ADD COLUMN fk_commandedet INTEGER;
-ALTER TABLE llx_returnmgmt_return_line ADD COLUMN fk_entrepot INTEGER;
-ALTER TABLE llx_returnmgmt_return_line ADD COLUMN comment TEXT;
-```
-
-## Changelog
-
-### 1.2.0
-
-- **Shipment-initiated returns** — "Create Return" button on validated shipment cards
-- **Per-line qty tracking** — qty ordered, qty shipped, qty already returned with max enforcement
-- **Per-line warehouse and lot/serial** selection on create form
-- **Stock movements on receive** — positive stock entries via `MouvementStock::reception()` with origin tracking
-- **Credit note creation** — traverses shipment → order → invoice links to create credit notes with original pricing
-- **Updated list page** — columns: Ref, Label, Return Date, Customer, Note, Status with date range filters
-- **Standalone create with shipment picker** — select customer → pick shipment → load lines
-
-### 1.1.2
-
-- Fix AJAX shipment lines query (wrong `expeditiondet_batch`/`element_element` joins)
-- Fix module `remove()` calling `_init()` instead of `_remove()`
-- Fix `init()` missing `delete_menus()` before `_init()`
-- Fix zip package structure (top-level dir `returnmgmt/` not `module/`)
-
-### 1.1.1
-
-- Fix duplicate menu entry error on module re-enable
-
-### 1.1.0
-
-- Shipment line picker for return creation
-- Card page error fixes
+**New Customer Return Form**
+![New Customer Return](docs/screenshots/new-return-form.png)
 
 ## License
 
-GPL-3.0-or-later
+This module is licensed under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html).
