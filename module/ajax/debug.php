@@ -66,6 +66,23 @@ if ($mode === 'overview' || $run_all) {
 	print "--- MODULE STATUS ---\n";
 	print "isModEnabled('customerreturn'): ".(isModEnabled('customerreturn') ? 'YES' : 'NO')."\n";
 
+	// File paths and versions
+	print "\n--- FILE PATHS ---\n";
+	print "  DOL_DOCUMENT_ROOT: ".DOL_DOCUMENT_ROOT."\n";
+	print "  DOL_DATA_ROOT: ".DOL_DATA_ROOT."\n";
+	if (defined('DOL_DOCUMENT_ROOT_ALT')) {
+		print "  DOL_DOCUMENT_ROOT_ALT: ".DOL_DOCUMENT_ROOT_ALT."\n";
+	}
+	$card_path = dol_buildpath('/customerreturn/customerreturn_card.php', 0);
+	print "  card.php resolved path: ".$card_path."\n";
+	print "  card.php exists: ".(file_exists($card_path) ? 'YES' : 'NO')."\n";
+	if (file_exists($card_path)) {
+		print "  card.php modified: ".date('Y-m-d H:i:s', filemtime($card_path))."\n";
+		print "  card.php size: ".filesize($card_path)." bytes\n";
+		print "  card.php contains butAction: ".(strpos(file_get_contents($card_path), 'butAction') !== false ? 'YES' : 'NO')."\n";
+	}
+	print "  debug.php __FILE__: ".__FILE__."\n";
+
 	// DB tables
 	print "\n--- DATABASE TABLES ---\n";
 	foreach (array('customer_return', 'customer_return_line', 'customer_return_extrafields') as $tbl) {
