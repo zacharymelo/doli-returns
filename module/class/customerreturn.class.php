@@ -558,6 +558,7 @@ class CustomerReturn extends CommonObject
 					if ($warehouse_id > 0) {
 						$mouv = new MouvementStock($this->db);
 						$mouv->setOrigin($this->element, $this->id);
+						$batchNum = $line->serial_number ? $line->serial_number : '';
 						$result = $mouv->livraison(
 							$user,
 							$line->fk_product,
@@ -567,7 +568,8 @@ class CustomerReturn extends CommonObject
 							$langs->trans('ReturnReopened', $this->ref),
 							'',
 							'',
-							$line->serial_number ? $line->serial_number : ''
+							'',
+							$batchNum
 						);
 						if ($result < 0) {
 							$error++;

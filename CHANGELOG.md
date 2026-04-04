@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.3.1] - 2026-04-04
+
+### Fixed
+- Fix livraison() parameter order on reopen — batch/serial was passed as sellby instead of batch (different param order than reception)
+
 ## [2.3.0] - 2026-04-04
 
 ### Added
