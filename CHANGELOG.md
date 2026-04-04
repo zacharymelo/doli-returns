@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.2.2] - 2026-04-04
+
+### Fixed
+- Fix AJAX shipment list "undefined" lines — use dol_buildpath() instead of hardcoded /custom/ path
+
 ## [2.2.1] - 2026-04-03
 
 ### Fixed

@@ -563,7 +563,7 @@ if ($action == 'create') {
 
 		// JavaScript: load customer shipments list, clicking a row redirects to Entry A
 		print '<script>(function(){
-	var shipmentsAjaxUrl = "'.DOL_URL_ROOT.'/custom/customerreturn/ajax/customer_shipments.php";
+	var shipmentsAjaxUrl = "'.dol_buildpath('/customerreturn/ajax/customer_shipments.php', 1).'";
 	var container = document.getElementById("shipment-list-container");
 	var lblRef       = "'.dol_escape_js($langs->trans('Ref')).'";
 	var lblDate      = "'.dol_escape_js($langs->trans('Date')).'";
