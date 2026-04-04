@@ -32,7 +32,7 @@ class modCustomerreturn extends DolibarrModules
 		$this->module_position = '90';
 		$this->name = preg_replace('/^mod/i', '', get_class($this));
 		$this->description = 'Customer merchandise return management with stock movement tracking and credit note generation';
-		$this->version = '2.2.2';
+		$this->version = '2.2.3';
 		$this->const_name = 'MAIN_MODULE_'.strtoupper($this->name);
 		$this->picto = 'dollyrevert';
 
@@ -94,7 +94,7 @@ class modCustomerreturn extends DolibarrModules
 		$this->rights[$r][0] = 510104;
 		$this->rights[$r][1] = 'Validate customer returns';
 		$this->rights[$r][2] = 'd';
-		$this->rights[$r][3] = 0;
+		$this->rights[$r][3] = 1;
 		$this->rights[$r][4] = 'customerreturn';
 		$this->rights[$r][5] = 'validate';
 
@@ -102,7 +102,7 @@ class modCustomerreturn extends DolibarrModules
 		$this->rights[$r][0] = 510105;
 		$this->rights[$r][1] = 'Close customer returns';
 		$this->rights[$r][2] = 'd';
-		$this->rights[$r][3] = 0;
+		$this->rights[$r][3] = 1;
 		$this->rights[$r][4] = 'customerreturn';
 		$this->rights[$r][5] = 'close';
 

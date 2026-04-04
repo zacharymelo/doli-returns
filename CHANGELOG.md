@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.2.3] - 2026-04-04
+
+### Fixed
+- Guard fetchObjectLinked/showLinkedObjectBlock with try/catch to prevent fatal errors from hiding action buttons
+
 ## [2.2.2] - 2026-04-04
 
 ### Fixed
