@@ -899,12 +899,8 @@ if ($action == 'create') {
 	print dol_get_fiche_end();
 
 	// Linked objects
-	try {
-		$object->fetchObjectLinked();
-		print $object->showLinkedObjectBlock();
-	} catch (Exception $e) {
-		dol_syslog('CustomerReturn::showLinkedObjectBlock error: '.$e->getMessage(), LOG_WARNING);
-	}
+	$object->fetchObjectLinked();
+	print $object->showLinkedObjectBlock();
 
 	// Action buttons
 	print '<div class="tabsAction">';

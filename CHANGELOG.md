@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.2.4] - 2026-04-04
+
+### Fixed
+- Add missing linkedobjectblock.tpl.php template — was causing fatal error that hid Validate/Close/Delete action buttons
+
 ## [2.2.3] - 2026-04-04
 
 ### Fixed
