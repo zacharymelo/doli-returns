@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.2.8] - 2026-04-04
+
+### Fixed
+- Add unlink action handler (actions_dellink.inc.php) so related objects can be unlinked from card
+- Fix delete to clean up element_element rows using both prefixed and unprefixed element types
+
 ## [2.2.7] - 2026-04-04
 
 ### Fixed

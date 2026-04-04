@@ -59,6 +59,10 @@ if ($id > 0 || !empty($ref)) {
 // Initialize hook manager
 $hookmanager->initHooks(array('customerreturncard', 'globalcard'));
 
+// Handle link/unlink actions
+$permissiondellink = $permwrite;
+include DOL_DOCUMENT_ROOT.'/core/actions_dellink.inc.php';
+
 $form = new Form($db);
 $formcompany = new FormCompany($db);
 $formfile = new FormFile($db);

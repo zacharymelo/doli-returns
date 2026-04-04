@@ -348,11 +348,13 @@ class CustomerReturn extends CommonObject
 			}
 		}
 
-		// Delete linked objects
+		// Delete linked objects (match both unprefixed and prefixed element types)
 		if (!$error) {
+			$elType = $this->db->escape($this->element);
+			$elTypePrefixed = $this->db->escape($this->getElementType());
 			$sql = "DELETE FROM ".MAIN_DB_PREFIX."element_element";
-			$sql .= " WHERE (fk_source = ".((int) $this->id)." AND sourcetype = '".$this->db->escape($this->element)."')";
-			$sql .= " OR (fk_target = ".((int) $this->id)." AND targettype = '".$this->db->escape($this->element)."')";
+			$sql .= " WHERE (fk_source = ".((int) $this->id)." AND sourcetype IN ('".$elType."', '".$elTypePrefixed."'))";
+			$sql .= " OR (fk_target = ".((int) $this->id)." AND targettype IN ('".$elType."', '".$elTypePrefixed."'))";
 			if (!$this->db->query($sql)) {
 				$error++;
 				$this->errors[] = 'Error '.$this->db->lasterror();
