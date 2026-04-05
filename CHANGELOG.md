@@ -3,7 +3,10 @@
 ## [2.3.1] - 2026-04-04
 
 ### Fixed
+- Fix serial number mismatch on return creation — when a shipment line had multiple serials, the form used the same key for all rows causing the last serial to overwrite the selected one
 - Fix livraison() parameter order on reopen — batch/serial was passed as sellby instead of batch (different param order than reception)
+- Each batch-tracked line now has a unique form key and max qty of 1 per serial
+- Expeditiondet ID passed via hidden input instead of derived from row key
 
 ## [2.3.0] - 2026-04-04
 

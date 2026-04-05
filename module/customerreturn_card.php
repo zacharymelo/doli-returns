@@ -108,21 +108,22 @@ if ($action == 'add' && $permwrite) {
 		$result = $object->create($user);
 		if ($result > 0) {
 			// Add selected shipment lines as return lines
-			foreach ($toselect as $line_id) {
-				$line_id = (int) $line_id;
-				$qty = GETPOST('return_qty_'.$line_id, 'int');
+			foreach ($toselect as $lid) {
+				$lid = preg_replace('/[^0-9_]/', '', $lid);
+				$qty = GETPOST('return_qty_'.$lid, 'int');
 				if ($qty <= 0) { $qty = 1; }
-				$fk_product = GETPOSTINT('fk_product_'.$line_id);
-				$serial = GETPOST('serial_number_'.$line_id, 'alpha');
-				$description = GETPOST('product_label_'.$line_id, 'alpha');
-				$fk_commandedet = GETPOSTINT('fk_commandedet_'.$line_id);
-				$fk_entrepot = GETPOSTINT('fk_entrepot_'.$line_id);
-				$comment = GETPOST('comment_'.$line_id, 'restricthtml');
+				$fk_product = GETPOSTINT('fk_product_'.$lid);
+				$serial = GETPOST('serial_number_'.$lid, 'alpha');
+				$description = GETPOST('product_label_'.$lid, 'alpha');
+				$fk_commandedet = GETPOSTINT('fk_commandedet_'.$lid);
+				$fk_expeditiondet = GETPOSTINT('fk_expeditiondet_'.$lid);
+				$fk_entrepot = GETPOSTINT('fk_entrepot_'.$lid);
+				$comment = GETPOST('comment_'.$lid, 'restricthtml');
 
 				$object->addLine(
 					$fk_product, $qty, $description, $serial,
 					0, 0,
-					$object->fk_expedition, $line_id, $fk_commandedet,
+					$object->fk_expedition, $fk_expeditiondet, $fk_commandedet,
 					$fk_entrepot, $comment
 				);
 			}
@@ -429,9 +430,12 @@ if ($action == 'create') {
 			$i = 0;
 			while ($i < $num_lines) {
 				$obj_line = $db->fetch_object($resql_lines);
-				$lid = $obj_line->line_id;
-				$qty_ar = isset($already_returned[$lid]) ? $already_returned[$lid] : 0;
+				$edid = $obj_line->line_id;
+				$qty_ar = isset($already_returned[$edid]) ? $already_returned[$edid] : 0;
 				$qty_returnable = max(0, $obj_line->qty_shipped - $qty_ar);
+
+				// Unique row key: expeditiondet ID + batch index to handle multiple serials per line
+				$lid = $edid.'_'.$i;
 
 				$product_display = '';
 				if ($obj_line->fk_product > 0 && !empty($obj_line->product_ref)) {
@@ -458,9 +462,10 @@ if ($action == 'create') {
 				// Qty Already Returned
 				print '<td class="right">'.($qty_ar > 0 ? $qty_ar : '0').'</td>';
 
-				// Return Qty
+				// Return Qty — for batch lines, max is 1 per serial
+				$max_qty = !empty($obj_line->batch_number) ? 1 : $qty_returnable;
 				print '<td class="center">';
-				print '<input type="number" name="return_qty_'.$lid.'" class="flat width50 right return-qty" min="0" max="'.$qty_returnable.'" value="0" data-line="'.$lid.'">';
+				print '<input type="number" name="return_qty_'.$lid.'" class="flat width50 right return-qty" min="0" max="'.$max_qty.'" value="0" data-line="'.$lid.'">';
 				print '</td>';
 
 				// Warehouse
@@ -488,6 +493,7 @@ if ($action == 'create') {
 				print '<input type="hidden" name="serial_number_'.$lid.'" value="'.dol_escape_htmltag($obj_line->batch_number).'">';
 				print '<input type="hidden" name="product_label_'.$lid.'" value="'.dol_escape_htmltag($product_display).'">';
 				print '<input type="hidden" name="fk_commandedet_'.$lid.'" value="'.$obj_line->fk_commandedet.'">';
+				print '<input type="hidden" name="fk_expeditiondet_'.$lid.'" value="'.$edid.'">';
 
 				print '</tr>';
 				$i++;

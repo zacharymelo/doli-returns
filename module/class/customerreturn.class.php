@@ -558,18 +558,15 @@ class CustomerReturn extends CommonObject
 					if ($warehouse_id > 0) {
 						$mouv = new MouvementStock($this->db);
 						$mouv->setOrigin($this->element, $this->id);
-						$batchNum = $line->serial_number ? $line->serial_number : '';
+						// Don't pass batch/serial on reversal — avoids lot-level
+						// stock checks that fail if stock was moved or consumed
 						$result = $mouv->livraison(
 							$user,
 							$line->fk_product,
 							$warehouse_id,
 							$line->qty,
 							0,
-							$langs->trans('ReturnReopened', $this->ref),
-							'',
-							'',
-							'',
-							$batchNum
+							$langs->trans('ReturnReopened', $this->ref)
 						);
 						if ($result < 0) {
 							$error++;
