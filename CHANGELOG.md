@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.3.2] - 2026-04-21
+
+### Fixed
+- Namespace lang keys colliding with Dolibarr core (`CreateCreditNote`, `CreditNoteCreated`, `DefaultWarehouse`, `QtyOrdered`, `QtyShipped`) — renamed to `CReturn*` variants and updated all callers. `CreditNoteCreated` was the most dangerous (core's version is a 2-arg HTML message, ours was a 1-arg plain message; both coexisting meant whoever loaded last won).
+
 ## [2.3.1] - 2026-04-04
 
 ### Fixed

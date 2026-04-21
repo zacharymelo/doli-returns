@@ -59,7 +59,7 @@ print '<tr class="liste_titre"><td>'.$langs->trans('Parameter').'</td><td>'.$lan
 // Default warehouse
 if (isModEnabled('stock')) {
 	$formproduct = new FormProduct($db);
-	print '<tr class="oddeven"><td>'.$langs->trans('DefaultWarehouse').'</td><td>';
+	print '<tr class="oddeven"><td>'.$langs->trans('CReturnDefaultWarehouse').'</td><td>';
 	print $formproduct->selectWarehouses(getDolGlobalInt('CUSTOMERRETURN_WAREHOUSE_DEFAULT'), 'CUSTOMERRETURN_WAREHOUSE_DEFAULT', '', 1);
 	print '</td></tr>';
 }

@@ -214,7 +214,7 @@ if ($action == 'confirm_createcreditnote' && $confirm == 'yes' && $permclose) {
 		$creditnote->type = Facture::TYPE_CREDIT_NOTE;
 		$creditnote->fk_facture_source = $fk_facture;
 		$creditnote->date = dol_now();
-		$creditnote->note_public = $langs->trans('CreditNoteCreated', $object->ref);
+		$creditnote->note_public = $langs->trans('CReturnCreditNoteCreated', $object->ref);
 
 		$result = $creditnote->create($user);
 		if ($result > 0) {
@@ -417,8 +417,8 @@ if ($action == 'create') {
 			print '<table class="noborder centpercent">';
 			print '<tr class="liste_titre">';
 			print '<td>'.$langs->trans('CReturnProduct').'</td>';
-			print '<td class="right">'.$langs->trans('QtyOrdered').'</td>';
-			print '<td class="right">'.$langs->trans('QtyShipped').'</td>';
+			print '<td class="right">'.$langs->trans('CReturnQtyOrdered').'</td>';
+			print '<td class="right">'.$langs->trans('CReturnQtyShipped').'</td>';
 			print '<td class="right">'.$langs->trans('QtyAlreadyReturned').'</td>';
 			print '<td class="center">'.$langs->trans('ReturnQty').'</td>';
 			print '<td>'.$langs->trans('CReturnWarehouse').'</td>';
@@ -779,7 +779,7 @@ if ($action == 'create') {
 			);
 			print $form->formconfirm(
 				$_SERVER['PHP_SELF'].'?id='.$object->id,
-				$langs->trans('CreateCreditNote'),
+				$langs->trans('CReturnCreateCreditNote'),
 				$langs->trans('ConfirmCreateCreditNote'),
 				'confirm_createcreditnote',
 				$formquestion,
@@ -937,7 +937,7 @@ if ($action == 'create') {
 
 	// Create Credit Note
 	if ($object->status == CustomerReturn::STATUS_CLOSED && $permclose) {
-		print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=createcreditnote&token='.newToken().'">'.$langs->trans('CreateCreditNote').'</a>';
+		print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=createcreditnote&token='.newToken().'">'.$langs->trans('CReturnCreateCreditNote').'</a>';
 	}
 
 	// Delete

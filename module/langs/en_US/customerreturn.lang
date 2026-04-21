@@ -49,7 +49,7 @@ ErrorFailedToGetNextRef = Failed to generate next reference number
 
 # Admin setup
 CustomerReturnSetup = Customer Return Setup
-DefaultWarehouse = Default Receiving Warehouse
+CReturnDefaultWarehouse = Default Receiving Warehouse
 NumberingModel = Numbering Model
 
 # Shipment line picker
@@ -58,8 +58,8 @@ CReturnShipment = Shipment
 ShipmentRef = Shipment Ref
 OrderRef = Order Ref
 CReturnOrder = Order
-QtyOrdered = Qty Ordered
-QtyShipped = Qty Shipped
+CReturnQtyOrdered = Qty Ordered
+CReturnQtyShipped = Qty Shipped
 QtyAlreadyReturned = Qty Already Returned
 ReturnQty = Return Qty
 SelectItemsToReturn = Select
@@ -78,10 +78,10 @@ CustomerShipments = Shipments for this customer
 SelectShipmentToContinue = Select a shipment to continue
 
 # Credit note
-CreateCreditNote = Create Credit Note
+CReturnCreateCreditNote = Create Credit Note
 ConfirmCreateCreditNote = Confirm the creation of a credit note?
 ProductsInInvoice = Products in invoice %s
-CreditNoteCreated = Credit note %s created
+CReturnCreditNoteCreated = Credit note %s created
 NoInvoiceLinked = No invoice linked to this return
 
 # Additional fields
