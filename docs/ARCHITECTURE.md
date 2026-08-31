@@ -18,8 +18,8 @@ Verified against **Dolibarr 22.0.4**.
 |---|---|---|
 | Owns | The RMA workflow — the case, the warranty, the service history | The inbound goods movement and the credit note |
 | Key object | `SvcRequest` (`llx_svc_request`) | `CustomerReturn` (`llx_customer_return`) |
-| Tracks | `serial_in` (unit received), `serial_out` (unit sent back) | One line per returned unit, each with `serial_number` |
-| Moves stock | No — see *Inbound paths* below | **Yes** — `validate()` adds, `reopen()` reverses |
+| Tracks | `serial_number` (the unit the case is about) | One line per returned unit, each with `serial_number` |
+| Moves stock | Only via core `Reception` on Path B (non-functional on v22) | **Yes** — `validate()` adds, `reopen()` reverses |
 
 The warranty module drives the workflow; the returns module executes the stock side of it.
 
@@ -89,13 +89,24 @@ become mutually exclusive per SR.
 
 This is the load-bearing invariant of the integration.
 
-The RMA tracks a unit **in** and a unit **out**, and they are frequently different physical units
-(a repaired unit swapped for a refurbished one):
+The RMA can track a unit **in** and a unit **out** separately, since they are sometimes different
+physical units (a repaired unit swapped for a refurbished one):
 
-| Field | Meaning | Warehouse |
+| Field | Meaning | Populated in production? |
 |---|---|---|
-| `svc_request.serial_in` | Serial the customer sent back | `fk_warehouse_return` |
-| `svc_request.serial_out` | Serial shipped back to the customer | `fk_warehouse_source` |
+| `svc_request.serial_number` | The unit the case is about | **Yes** — this is the working field |
+| `svc_request.serial_in` | Serial the customer sent back (swap flows) | No — NULL on every SR |
+| `svc_request.serial_out` | Serial shipped back to the customer (swap flows) | No — NULL on every SR |
+
+In practice the chain that carries lot identity is:
+
+```
+svc_request.serial_number  ->  customer_return_line.serial_number  ->  stock_mouvement.batch
+```
+
+`serial_in` / `serial_out` are reserved for cross-ship swap resolutions and are currently unused, so do
+not treat them as the source of truth. Likewise `fk_warehouse_return` is NULL on every SR; the
+destination warehouse comes from the `WARRANTYSVC_WAREHOUSE_RETURN` global.
 
 Warranty coverage is bound to a serial (`SvcWarranty::fetchBySerial()`), so the serial on a record *is*
 the claim to a specific physical unit. Any stock operation that moves "one of this product" rather than
@@ -147,7 +158,7 @@ type. `CustomerReturn::delete()` removes both.
 
 | Trigger | Fired by | Handled by | Effect |
 |---|---|---|---|
-| `CUSTOMERRETURN_CUSTOMERRETURN_VALIDATE` | Returns | WarrantySvc | Sets `date_return_received`, advances SR Await Return -> In Progress |
+| `CUSTOMERRETURN_CUSTOMERRETURN_VALIDATE` | Returns | WarrantySvc | Sets `date_return_received`, advances SR Await Return -> In Progress (requires warrantysvc >= 1.32.5; before that `setInProgress()` rejected the transition and the trigger discarded the error) |
 | `CUSTOMERRETURN_CUSTOMERRETURN_REOPEN` | Returns | **nobody** | See below |
 
 **Known asymmetry.** WarrantySvc advances the SR when a return is validated, but has no `REOPEN`
@@ -155,6 +166,20 @@ handler. Reopening a return reverses the stock while leaving the SR advanced, st
 `date_return_received` for goods that are no longer in the warehouse. The returns module's lot guard
 narrows how often this is reachable (reopen is refused once the unit has shipped back out) but does not
 close it. Fixing it means adding the inverse handler in WarrantySvc.
+
+---
+
+## Production state (verified 2026-08-31)
+
+| Check | Value |
+|---|---|
+| `WARRANTYSVC_USE_CUSTOMERRETURN` | `1` — Path A active |
+| `WARRANTYSVC_WAREHOUSE_RETURN` | `1` (Front Office) |
+| `WARRANTYSVC_WARRANTY_REQUIRES_LOTS` | `1` |
+| `svc_request.fk_reception` | NULL on all 10 SRs — **Path B has never been used** |
+| `STOCK_DISALLOW_NEGATIVE_TRANSFER` | unset — core does not block negative lots |
+
+Path B being dormant is why its breakage has never surfaced in day-to-day use.
 
 ---
 
