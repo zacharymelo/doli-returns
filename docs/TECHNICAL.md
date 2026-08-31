@@ -1,6 +1,6 @@
 # Customer Return -- Technical Reference
 
-Module version: **2.2.1** | Module number: **510100** | Family: `crm` | Position: `90`
+Module version: **2.4.0** | Module number: **510100** | Family: `crm` | Position: `90`
 
 Requires: Dolibarr >= 16.0, PHP >= 7.0, modules `modSociete`, `modProduct`, `modStock`.
 
@@ -163,7 +163,11 @@ Admin-only diagnostic endpoint gated by `CUSTOMERRETURN_DEBUG_MODE` constant. Re
 | `id` | int | GET | Return ID (for `mode=object`) |
 | `q` | string | GET | Read-only SQL query (for `mode=sql`, SELECT only) |
 
-**Modes:** `overview`, `object`, `links`, `settings`, `classes`, `sql`, `triggers`, `hooks`, `all`.
+**Modes:** `overview`, `object`, `links`, `stock`, `settings`, `classes`, `sql`, `triggers`, `hooks`, `all`.
+
+`mode=stock` reconciles stock against returns. It lists movements whose originating return no longer exists (orphans left by a deleted return), nets them per return/product/batch/warehouse, and prints each affected batch's **current** qty — movement history is immutable, so a non-zero historical net stays on the books forever and only the current qty distinguishes a live problem from one already corrected. It also flags existing returns whose balance disagrees with their status (a draft holding stock, or a validated return holding none).
+
+`mode=object` additionally prints the return's own stock movements and its balance, flagging a draft that still holds stock.
 
 ---
 
@@ -230,10 +234,10 @@ Extends `CommonObject`. Main business object.
 | `fetch` | `($id, $ref = ''): int` | Load from DB by ID or ref. Auto-calls `fetchLines()`. Returns 1/0/-1. |
 | `fetchLines` | `(): int` | Load all lines ordered by `rang ASC, rowid ASC`. |
 | `update` | `($user, $notrigger = 0): int` | Update header fields. Fires `CUSTOMERRETURN_CUSTOMERRETURN_MODIFY`. |
-| `delete` | `($user, $notrigger = 0): int` | Delete return + lines + extrafields + element_element links. Fires `CUSTOMERRETURN_CUSTOMERRETURN_DELETE`. |
-| `validate` | `($user, $notrigger = 0): int` | DRAFT -> VALIDATED. Creates `MouvementStock::reception()` for each line with a product and warehouse. Fires `CUSTOMERRETURN_CUSTOMERRETURN_VALIDATE`. |
+| `delete` | `($user, $notrigger = 0): int` | Delete return + lines + extrafields + element_element links. **Refuses if status is not DRAFT, or if `getStockMovementBalance()` is non-zero** — deleting would strand the movements with no document left to explain or reverse them. Fires `CUSTOMERRETURN_CUSTOMERRETURN_DELETE`. |
+| `validate` | `($user, $notrigger = 0): int` | DRAFT -> VALIDATED. Creates `MouvementStock::reception()` per line (batch is the **9th** param). **Refuses if the draft already holds stock** (non-zero balance would double-stack), and refuses a lot-tracked line with no warehouse or no serial, so nothing is created that `reopen()` could not undo. Fires `CUSTOMERRETURN_CUSTOMERRETURN_VALIDATE`. |
 | `close` | `($user, $notrigger = 0): int` | VALIDATED -> CLOSED. Fires `CUSTOMERRETURN_CUSTOMERRETURN_CLOSE`. |
-| `reopen` | `($user, $notrigger = 0): int` | VALIDATED -> DRAFT. Fires `CUSTOMERRETURN_CUSTOMERRETURN_REOPEN`. |
+| `reopen` | `($user, $notrigger = 0): int` | VALIDATED or CLOSED -> DRAFT. Reverses each line via `MouvementStock::livraison()` **naming the lot** (batch is the **10th** param — a different position than `reception()`). Verifies the exact serial is on hand first, and verifies the balance nets to zero before committing. Fires `CUSTOMERRETURN_CUSTOMERRETURN_REOPEN`. |
 | `getNextNumRef` | `(): string` | Delegates to the configured numbering module (`CUSTOMERRETURN_ADDON`). |
 | `getNomUrl` | `($withpicto = 0, $option = '', $notooltip = 0, $morecss = '', $save_lastsearch_value = -1): string` | Return HTML link to card page. |
 | `getLibStatut` | `($mode = 0): string` | Return status badge HTML for current status. |
@@ -241,6 +245,9 @@ Extends `CommonObject`. Main business object.
 | `addLine` | `($fk_product, $qty, $description, $serial_number, $subprice, $tva_tx, $fk_expedition, $fk_expeditiondet, $fk_commandedet, $fk_entrepot, $comment): int` | Add a line. Returns line ID or -1. |
 | `updateLine` | `($lineid, $fk_product, $qty, $description, $serial_number, $subprice, $tva_tx): int` | Update an existing line. |
 | `deleteLine` | `($lineid): int` | Delete a line by ID. |
+| `getStockMovementBalance` | `(): float\|null` | Sum of `value` across `llx_stock_mouvement` where `origintype='customerreturn'` and `fk_origin` is this return. Must be 0 whenever the return is not validated. `null` only on query failure. |
+| `getBatchQtyInWarehouse` | `($fk_product, $fk_entrepot, $batch): float\|null` | Qty of one lot/serial held in one warehouse. Filters on product as well as warehouse. `null` only on query failure. |
+| `productRequiresBatch` | `($fk_product): bool` | Whether the product is lot/serial tracked (reads `llx_product.tobatch`, mirroring `Product::hasbatch()`). |
 | `getLinkedInvoice` | `(): int` | Traverse `element_element` (expedition -> commande -> facture) to find the linked invoice. Returns invoice ID or 0. |
 
 ---
@@ -330,6 +337,56 @@ Additionally, `customerreturn_card.php` initializes hooks for contexts `customer
 | `CUSTOMERRETURN_CUSTOMERRETURN_CLOSE` | Fired after a return is closed. Logs to syslog. |
 | `CUSTOMERRETURN_CUSTOMERRETURN_REOPEN` | Fired after a return is reopened. Logs to syslog. |
 | `ORDER_CREATE` | Listens for native sales order creation. If `origin` is `customerreturn_customerreturn`, calls `_linkOrderToReturn()` to insert a bidirectional link in `llx_element_element` (sourcetype=`customerreturn`, targettype=`commande`). |
+
+---
+
+## Stock Integrity
+
+### The invariant
+
+> A return's own stock movements must sum to zero whenever it is not validated.
+
+`validate()` adds stock, `reopen()` takes it back out, and both tag their movements with this return as origin
+(`origintype='customerreturn'`, `fk_origin=<id>`). So a DRAFT return must balance to exactly 0, and a
+VALIDATED/CLOSED one legitimately holds stock. Any other combination means qty is sitting in a warehouse that
+only this record accounts for.
+
+`getStockMovementBalance()` is the single check; it is enforced at three points:
+
+| Transition | Guard |
+|---|---|
+| `delete()` | Refuses non-DRAFT, and refuses any non-zero balance. |
+| `validate()` | Refuses a draft that already holds stock, so a stranded movement cannot be double-stacked. |
+| `reopen()` | After reversing, verifies the balance actually reached zero before committing. |
+
+The third is the important one: it makes a future edit that forgets a reversal fail loudly instead of silently
+stranding stock.
+
+### Lot awareness
+
+Reversals name the lot. The warrantysvc module keys its `serial_in` / `serial_out` chain on lot identity, so a
+reversal that pulled an arbitrary serial would silently rewrite which physical unit the records describe.
+
+Before reversing a lot-tracked line, `reopen()` checks the exact serial is on hand in that warehouse via
+`getBatchQtyInWarehouse()`. **This check cannot be delegated to core.** `MouvementStock::_create()` does have a
+lot-availability check, but it is gated on `STOCK_DISALLOW_NEGATIVE_TRANSFER`; with that constant unset — which
+is the default — naming a serial that is absent from the warehouse still succeeds and drives the lot negative.
+
+If the serial has already shipped back out, reopen is refused rather than approximated. That is correct: the
+unit has physically left, so the movement is not reversible without claiming stock that is not there.
+
+### Param-order footgun
+
+`livraison()` and `reception()` do **not** order their arguments the same way:
+
+```php
+livraison($user, $product, $warehouse, $qty, $price, $label, $datem, $eatby, $sellby, $batch, ...)  // batch 10th
+reception($user, $product, $warehouse, $qty, $price, $label, $eatby, $sellby, $batch, $datem, ...)  // batch 9th
+```
+
+Passing the serial in the wrong slot writes it to `sellby` and leaves `batch` empty. On a lot-tracked product an
+empty batch makes `_create()` return `-2` outright ("stock movement without lot/serial information"), so the
+reversal fails rather than misfiring silently. Both call sites carry a comment.
 
 ---
 
@@ -510,6 +567,12 @@ All permissions use `rights_class = 'customerreturn'` with object `customerretur
 | `ErrorCustomerReturnNotDraft` | Customer return is not in draft status |
 | `ErrorCustomerReturnNotValidated` | Customer return is not in validated status |
 | `ErrorFailedToGetNextRef` | Failed to generate next reference number |
+| `ErrorCustomerReturnNotValidatedOrClosed` | Customer return must be validated or closed to reopen |
+| `ErrorCustomerReturnHasStock` | Customer return %s still has %s unit(s) of stock attributed to it... |
+| `ErrorCustomerReturnReopenLeftStock` | Reopening customer return %s did not fully reverse its stock (%s unit(s) remain)... |
+| `ErrorCustomerReturnLineNoWarehouse` | No warehouse set for lot-tracked item %s... |
+| `ErrorCustomerReturnLineNoSerial` | No serial number on the line for product %s... |
+| `ErrorCustomerReturnSerialNotInStock` | Serial %s is no longer in warehouse %s (on hand: %s, needed: %s)... |
 | `CustomerReturnSetup` | Customer Return Setup |
 | `DefaultWarehouse` | Default Receiving Warehouse |
 | `NumberingModel` | Numbering Model |

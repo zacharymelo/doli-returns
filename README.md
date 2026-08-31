@@ -24,6 +24,19 @@ When receiving returned items, choose the destination warehouse and lot/serial n
 
 When a return is marked as received, stock movements are automatically created to add the returned quantities back into the selected warehouses. Your inventory levels update immediately with full traceability -- the stock movement log shows the return reference as the origin document.
 
+For serialised products the movement names the specific serial, both on the way in and on the way back out. Reopening a return reverses exactly the serial it took in -- never a different unit that happens to be the same product.
+
+### Stock Safety Guards
+
+The module will not let a return leave stock stranded in your warehouse:
+
+- A return that still has stock attributed to it cannot be deleted. Reopen it first to reverse the movements.
+- A return cannot be validated twice, so a stock movement can never be stacked on top of an existing one.
+- Reopening verifies the reversal actually completed before saving anything. If it cannot fully reverse, nothing changes.
+- If the returned serial has already been shipped back out, reopening is refused with a clear explanation rather than quietly pulling a different unit from stock.
+
+Administrators can enable Debug Mode in setup and visit the diagnostics endpoint with `?mode=stock` to reconcile stock against returns and surface anything left behind by returns deleted in older versions.
+
 ### Credit Note Generation
 
 Generate a credit note directly from a completed return. The system traverses the link chain (shipment to order to invoice) and creates a credit note with the returned line items at the original invoice pricing. Review and validate the credit note to complete the financial side of the return.
@@ -33,8 +46,10 @@ Generate a credit note directly from a completed return. The system traverses th
 Each return follows a simple lifecycle:
 
 1. **Draft** -- The return has been created and can still be edited. Add or remove lines, adjust quantities, and select warehouses.
-2. **Validated** -- The return is confirmed and locked for editing. It is now awaiting receipt of goods.
-3. **Received** -- Items have been received, stock movements have been processed, and a credit note can be generated.
+2. **Validated** -- The return is confirmed and locked for editing. **Stock movements are created at this step**, adding the returned quantities into the selected warehouses.
+3. **Closed** -- The return is complete and a credit note can be generated. No further stock movement occurs at this step.
+
+A validated or closed return can be reopened back to Draft, which reverses the stock movements it created.
 
 ### Notes
 
@@ -90,21 +105,23 @@ On the Draft return, review each line. Adjust return quantities as needed. For e
 
 ### Receiving Items
 
-1. Open a validated return
-2. Confirm that the items have arrived at your facility
-3. Click **Receive** to process the return
-4. Stock movements are created automatically for each line, adding the returned quantities into the selected warehouses
-5. The return moves to the Received status
+1. Open a draft return and confirm that the items have arrived at your facility
+2. Click **Validate** to process the return
+3. Stock movements are created automatically for each line, adding the returned quantities into the selected warehouses. Serialised lines move under their specific serial number
+4. The return moves to the Validated status
+5. Click **Close** once the return is finished -- this is a bookkeeping step and does not move stock
 
 ### Credit Note Creation
 
-Once a return is in the Received status, click the **Create Credit Note** button. The system generates a credit note pre-filled with the returned product lines at their original invoice prices. Review the credit note and validate it to issue the credit to the customer.
+Once a return is in the Closed status, click the **Create Credit Note** button. The system generates a credit note pre-filled with the returned product lines at their original invoice prices. Review the credit note and validate it to issue the credit to the customer.
 
 ## Optional Integrations
 
 ### WarrantySvc
 
 When the [WarrantySvc](https://github.com/zacharymelo/Dolibarr-Warranties) module is installed and the integration toggle is enabled in admin setup, returns can be initiated directly from service requests. This connects the return process to the RMA workflow so warranty-related returns are tracked from the initial service request through stock receipt and credit note. The linked service request appears in the return's "Linked Objects" block, and vice versa.
+
+Because the RMA workflow tracks a unit in and a unit out by serial number, this module keeps serial identity intact across the whole return lifecycle -- the serial recorded on receipt is the serial reversed on reopen, so the warranty history always describes the physical unit it claims to.
 
 ## Screenshots
 
