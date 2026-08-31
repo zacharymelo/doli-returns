@@ -158,7 +158,7 @@ type. `CustomerReturn::delete()` removes both.
 
 | Trigger | Fired by | Handled by | Effect |
 |---|---|---|---|
-| `CUSTOMERRETURN_CUSTOMERRETURN_VALIDATE` | Returns | WarrantySvc | Sets `date_return_received`, advances SR Await Return -> In Progress (requires warrantysvc >= 1.32.5; before that `setInProgress()` rejected the transition and the trigger discarded the error) |
+| `CUSTOMERRETURN_CUSTOMERRETURN_VALIDATE` | Returns | WarrantySvc | Sets `date_return_received`, then advances SR Await Return -> In Progress **only if a resolution type is chosen** (diagnosis-first model, warrantysvc >= 1.34.0). With no resolution type the case stays in Await Return; from 1.35.0 the refusal is logged as a warning instead of being discarded. Versions <= 1.32.4 never advanced at all — `setInProgress()` rejected the transition silently. |
 | `CUSTOMERRETURN_CUSTOMERRETURN_REOPEN` | Returns | **nobody** | See below |
 
 **Known asymmetry.** WarrantySvc advances the SR when a return is validated, but has no `REOPEN`
