@@ -46,6 +46,11 @@ ErrorCustomerReturnNotDraft = Customer return is not in draft status
 ErrorCustomerReturnNotValidated = Customer return is not in validated status
 ErrorCustomerReturnNotValidatedOrClosed = Customer return must be validated or closed to reopen
 ErrorFailedToGetNextRef = Failed to generate next reference number
+ErrorCustomerReturnHasStock = Customer return %s still has %s unit(s) of stock attributed to it. Reopen it to reverse the stock movements before continuing.
+ErrorCustomerReturnReopenLeftStock = Reopening customer return %s did not fully reverse its stock (%s unit(s) remain). No changes were saved.
+ErrorCustomerReturnLineNoWarehouse = No warehouse set for lot-tracked item %s. A serialised line must name the warehouse it moves through.
+ErrorCustomerReturnLineNoSerial = No serial number on the line for product %s. A lot-tracked item cannot be moved without its serial.
+ErrorCustomerReturnSerialNotInStock = Serial %s is no longer in warehouse %s (on hand: %s, needed: %s). It has already been shipped or moved, so this return cannot be reversed without breaking lot tracking.
 
 # Admin setup
 CustomerReturnSetup = Customer Return Setup

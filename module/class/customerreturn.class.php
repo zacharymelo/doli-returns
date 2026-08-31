@@ -309,6 +309,98 @@ class CustomerReturn extends CommonObject
 	}
 
 	/**
+	 * Sum the signed qty of every stock movement this return created.
+	 *
+	 * validate() adds stock, reopen() takes it back out, and both tag their
+	 * movements with this return as origin. So a return that is not currently
+	 * validated must balance to exactly zero. Any other value means stock is
+	 * sitting in a warehouse that only this record accounts for.
+	 *
+	 * @return float|null Signed qty, or null if the query failed
+	 */
+	public function getStockMovementBalance()
+	{
+		$sql = "SELECT SUM(value) as balance FROM ".MAIN_DB_PREFIX."stock_mouvement";
+		$sql .= " WHERE origintype = '".$this->db->escape($this->element)."'";
+		$sql .= " AND fk_origin = ".((int) $this->id);
+
+		$resql = $this->db->query($sql);
+		if (!$resql) {
+			return null;
+		}
+
+		$obj = $this->db->fetch_object($resql);
+		$this->db->free($resql);
+
+		return (float) $obj->balance;
+	}
+
+	/**
+	 * Does this product require a lot/serial on every stock movement?
+	 *
+	 * Mirrors Product::hasbatch(), which reads llx_product.tobatch into
+	 * $status_batch. Queried directly to avoid loading a full Product just to
+	 * read one flag.
+	 *
+	 * @param  int  $fk_product Product id
+	 * @return bool             True if lot/serial tracked
+	 */
+	public function productRequiresBatch($fk_product)
+	{
+		if (!isModEnabled('productbatch')) {
+			return false;
+		}
+
+		$sql = "SELECT tobatch FROM ".MAIN_DB_PREFIX."product WHERE rowid = ".((int) $fk_product);
+		$resql = $this->db->query($sql);
+		if (!$resql) {
+			return false;
+		}
+
+		$obj = $this->db->fetch_object($resql);
+		$this->db->free($resql);
+
+		return !empty($obj) && $obj->tobatch > 0;
+	}
+
+	/**
+	 * Qty of one specific lot/serial currently held in one warehouse.
+	 *
+	 * Deliberately not ProductBatch::find(): that helper returns 1 whether or
+	 * not a row matched, populating nothing when it did not, so "serial absent"
+	 * and "serial present" are not distinguishable from its return value alone.
+	 * This returns a plain qty, and null only on a real query failure.
+	 *
+	 * It also filters on product, which find() does not — uk_product_lot is on
+	 * (fk_product, batch), so a batch string is unique per product, not global.
+	 * Not reachable today (no batch is held by two products in one warehouse)
+	 * but free to be correct about.
+	 *
+	 * @param  int    $fk_product  Product id
+	 * @param  int    $fk_entrepot Warehouse id
+	 * @param  string $batch       Lot/serial number
+	 * @return float|null          Qty on hand (0 if none), or null on query failure
+	 */
+	public function getBatchQtyInWarehouse($fk_product, $fk_entrepot, $batch)
+	{
+		$sql = "SELECT SUM(pb.qty) as qty FROM ".MAIN_DB_PREFIX."product_batch pb";
+		$sql .= " INNER JOIN ".MAIN_DB_PREFIX."product_stock ps ON ps.rowid = pb.fk_product_stock";
+		$sql .= " WHERE ps.fk_product = ".((int) $fk_product);
+		$sql .= " AND ps.fk_entrepot = ".((int) $fk_entrepot);
+		$sql .= " AND pb.batch = '".$this->db->escape($batch)."'";
+
+		$resql = $this->db->query($sql);
+		if (!$resql) {
+			return null;
+		}
+
+		$obj = $this->db->fetch_object($resql);
+		$this->db->free($resql);
+
+		return (float) $obj->qty;
+	}
+
+	/**
 	 * Delete customer return from database
 	 *
 	 * @param  User $user      User that deletes
@@ -317,6 +409,29 @@ class CustomerReturn extends CommonObject
 	 */
 	public function delete($user, $notrigger = 0)
 	{
+		global $langs;
+
+		if ($this->status != self::STATUS_DRAFT) {
+			$this->error = 'ErrorCustomerReturnNotDraft';
+			return -1;
+		}
+
+		// Refuse while stock is still attributed to this return. Deleting the
+		// record would strand those movements: the qty stays in the warehouse
+		// with no document left to explain it or to reverse it from.
+		if (isModEnabled('stock')) {
+			$balance = $this->getStockMovementBalance();
+			if ($balance === null) {
+				$this->error = 'Error '.$this->db->lasterror();
+				return -1;
+			}
+			if (abs($balance) > 0.00001) {
+				$langs->load('customerreturn@customerreturn');
+				$this->error = $langs->trans('ErrorCustomerReturnHasStock', $this->ref, $balance);
+				return -1;
+			}
+		}
+
 		$error = 0;
 
 		$this->db->begin();
@@ -390,9 +505,27 @@ class CustomerReturn extends CommonObject
 	 */
 	public function validate($user, $notrigger = 0)
 	{
+		global $langs;
+
 		if ($this->status != self::STATUS_DRAFT) {
 			$this->error = 'ErrorCustomerReturnNotDraft';
 			return -1;
+		}
+
+		// A draft must carry no stock of its own before we add more. A non-zero
+		// balance here means an earlier validate was never reversed, and
+		// validating again would stack a second movement on top of it.
+		if (isModEnabled('stock')) {
+			$balance = $this->getStockMovementBalance();
+			if ($balance === null) {
+				$this->error = 'Error '.$this->db->lasterror();
+				return -1;
+			}
+			if (abs($balance) > 0.00001) {
+				$langs->load('customerreturn@customerreturn');
+				$this->error = $langs->trans('ErrorCustomerReturnHasStock', $this->ref, $balance);
+				return -1;
+			}
 		}
 
 		$error = 0;
@@ -425,31 +558,53 @@ class CustomerReturn extends CommonObject
 				$this->fetchLines();
 			}
 
-			global $langs;
 			$langs->load('customerreturn@customerreturn');
 
 			foreach ($this->lines as $line) {
-				if ($line->fk_product > 0 && $line->qty > 0) {
-					$warehouse_id = $line->fk_entrepot > 0 ? $line->fk_entrepot : $this->fk_warehouse;
-					if ($warehouse_id > 0) {
-						$mouv = new MouvementStock($this->db);
-						$mouv->setOrigin($this->element, $this->id);
-						$result = $mouv->reception(
-							$user,
-							$line->fk_product,
-							$warehouse_id,
-							$line->qty,
-							0,
-							$langs->trans('ReturnValidated', $this->ref),
-							'',
-							'',
-							$line->serial_number ? $line->serial_number : ''
-						);
-						if ($result < 0) {
-							$error++;
-							$this->errors[] = $mouv->error;
-							break;
-						}
+				if ($line->fk_product <= 0 || $line->qty <= 0) {
+					continue;
+				}
+
+				$warehouse_id = $line->fk_entrepot > 0 ? $line->fk_entrepot : $this->fk_warehouse;
+				$requires_batch = $this->productRequiresBatch($line->fk_product);
+
+				// A lot-tracked line must land somewhere specific with a named
+				// serial, or reopen() could never unwind it. Refuse up front
+				// rather than validating something that is not reversible.
+				if ($requires_batch) {
+					if ($warehouse_id <= 0) {
+						$error++;
+						$this->errors[] = $langs->trans('ErrorCustomerReturnLineNoWarehouse', $line->serial_number ? $line->serial_number : $line->fk_product);
+						break;
+					}
+					if (empty($line->serial_number)) {
+						$error++;
+						$this->errors[] = $langs->trans('ErrorCustomerReturnLineNoSerial', $line->fk_product);
+						break;
+					}
+				}
+
+				if ($warehouse_id > 0) {
+					$mouv = new MouvementStock($this->db);
+					$mouv->setOrigin($this->element, $this->id);
+					// reception() takes ($user, $product, $warehouse, $qty,
+					// $price, $label, $eatby, $sellby, $batch, ...) — batch is
+					// 9th here, but 10th on livraison(). Do not mirror blindly.
+					$result = $mouv->reception(
+						$user,
+						$line->fk_product,
+						$warehouse_id,
+						$line->qty,
+						0,
+						$langs->trans('ReturnValidated', $this->ref),
+						'',
+						'',
+						$line->serial_number ? $line->serial_number : ''
+					);
+					if ($result < 0) {
+						$error++;
+						$this->errors[] = $mouv->error ? $mouv->error : implode(', ', $mouv->errors);
+						break;
 					}
 				}
 			}
@@ -553,27 +708,87 @@ class CustomerReturn extends CommonObject
 			$langs->load('customerreturn@customerreturn');
 
 			foreach ($this->lines as $line) {
-				if ($line->fk_product > 0 && $line->qty > 0) {
-					$warehouse_id = $line->fk_entrepot > 0 ? $line->fk_entrepot : $this->fk_warehouse;
-					if ($warehouse_id > 0) {
-						$mouv = new MouvementStock($this->db);
-						$mouv->setOrigin($this->element, $this->id);
-						// Don't pass batch/serial on reversal — avoids lot-level
-						// stock checks that fail if stock was moved or consumed
-						$result = $mouv->livraison(
-							$user,
-							$line->fk_product,
-							$warehouse_id,
-							$line->qty,
-							0,
-							$langs->trans('ReturnReopened', $this->ref)
-						);
-						if ($result < 0) {
-							$error++;
-							$this->errors[] = $mouv->error;
-							break;
-						}
+				if ($line->fk_product <= 0 || $line->qty <= 0) {
+					continue;
+				}
+
+				$warehouse_id = $line->fk_entrepot > 0 ? $line->fk_entrepot : $this->fk_warehouse;
+				if ($warehouse_id <= 0) {
+					// Previously skipped in silence, which let reopen report
+					// success while leaving the stock in place.
+					$error++;
+					$this->errors[] = $langs->trans('ErrorCustomerReturnLineNoWarehouse', $line->serial_number ? $line->serial_number : $line->fk_product);
+					break;
+				}
+
+				$batch = $line->serial_number ? $line->serial_number : '';
+
+				// The reversal must name the same lot the return took in. The
+				// warranty module keys its whole serial_in/serial_out chain on
+				// lot identity, so pulling an arbitrary serial back out would
+				// silently rewrite which physical unit the records describe.
+				if ($this->productRequiresBatch($line->fk_product)) {
+					if ($batch === '') {
+						$error++;
+						$this->errors[] = $langs->trans('ErrorCustomerReturnLineNoSerial', $line->fk_product);
+						break;
 					}
+
+					$onhand = $this->getBatchQtyInWarehouse($line->fk_product, $warehouse_id, $batch);
+					if ($onhand === null) {
+						$error++;
+						$this->errors[] = 'Error '.$this->db->lasterror();
+						break;
+					}
+					if ($onhand < $line->qty) {
+						// Core only enforces this when STOCK_DISALLOW_NEGATIVE_TRANSFER
+						// is set, which it need not be — so check it ourselves
+						// rather than letting the lot go negative.
+						require_once DOL_DOCUMENT_ROOT.'/product/stock/class/entrepot.class.php';
+						$wh = new Entrepot($this->db);
+						$wh->fetch($warehouse_id);
+						$error++;
+						$this->errors[] = $langs->trans('ErrorCustomerReturnSerialNotInStock', $batch, $wh->ref ? $wh->ref : $warehouse_id, $onhand, $line->qty);
+						break;
+					}
+				}
+
+				$mouv = new MouvementStock($this->db);
+				$mouv->setOrigin($this->element, $this->id);
+				// Param order differs from reception(): livraison() is
+				// ($user, $product, $warehouse, $qty, $price, $label, $datem,
+				//  $eatby, $sellby, $batch, ...) — batch is 10th, not 9th.
+				$result = $mouv->livraison(
+					$user,
+					$line->fk_product,
+					$warehouse_id,
+					$line->qty,
+					0,
+					$langs->trans('ReturnReopened', $this->ref),
+					'',
+					'',
+					'',
+					$batch
+				);
+				if ($result < 0) {
+					$error++;
+					$this->errors[] = $mouv->error ? $mouv->error : implode(', ', $mouv->errors);
+					break;
+				}
+			}
+
+			// Backstop: prove the ledger actually nets to zero rather than
+			// trusting that every branch above reported its own failure. This
+			// is what makes a future edit that forgets a reversal fail loudly
+			// here instead of stranding stock the way RT-2603-0001 did.
+			if (!$error) {
+				$balance = $this->getStockMovementBalance();
+				if ($balance === null) {
+					$error++;
+					$this->errors[] = 'Error '.$this->db->lasterror();
+				} elseif (abs($balance) > 0.00001) {
+					$error++;
+					$this->errors[] = $langs->trans('ErrorCustomerReturnReopenLeftStock', $this->ref, $balance);
 				}
 			}
 		}

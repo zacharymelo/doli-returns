@@ -11,6 +11,7 @@
  *   overview    — Module config, DB tables, element properties, templates (default)
  *   object      — Deep inspect a single return (?mode=object&id=2)
  *   links       — All element_element rows involving this module
+ *   stock       — Reconcile stock movements: orphans + balance mismatches
  *   settings    — All CUSTOMERRETURN_* constants
  *   classes     — Class loading + method checks
  *   sql         — Read-only diagnostic query (?mode=sql&q=SELECT...)
@@ -53,7 +54,7 @@ print "=== CUSTOMERRETURN DEBUG DIAGNOSTICS ===\n";
 print "Timestamp: ".date('Y-m-d H:i:s T')."\n";
 print "Dolibarr: ".(defined('DOL_VERSION') ? DOL_VERSION : 'unknown')."\n";
 print "Mode: $mode\n";
-print "Usage: ?mode=overview|object|links|settings|classes|sql|triggers|hooks|all\n";
+print "Usage: ?mode=overview|object|links|stock|settings|classes|sql|triggers|hooks|all\n";
 print "       ?mode=object&id=2\n";
 print "       ?mode=sql&q=SELECT+rowid,ref+FROM+llx_customer_return+LIMIT+5\n";
 print str_repeat('=', 60)."\n\n";
@@ -205,6 +206,25 @@ if ($mode === 'object' || $run_all) {
 				foreach ($obj->lines as $i => $line) {
 					print "    [$i] product=".$line->fk_product." qty=".$line->qty." serial=".$line->serial_number." warehouse=".$line->fk_entrepot."\n";
 				}
+
+				// Stock movements attributed to this return
+				print "\n  Stock movements (origintype=customerreturn, fk_origin=$oid):\n";
+				$sql = "SELECT rowid, datem, fk_product, batch, value, fk_entrepot, label FROM ".MAIN_DB_PREFIX."stock_mouvement";
+				$sql .= " WHERE origintype = 'customerreturn' AND fk_origin = ".((int) $oid)." ORDER BY rowid";
+				$resql = $db->query($sql);
+				if ($resql) {
+					$cnt = 0;
+					while ($row = $db->fetch_object($resql)) {
+						$cnt++;
+						print "    [$row->rowid] $row->datem product=$row->fk_product batch=$row->batch qty=$row->value wh=$row->fk_entrepot — $row->label\n";
+					}
+					if ($cnt == 0) print "    (none)\n";
+				}
+				$balance = $obj->getStockMovementBalance();
+				print "  Balance: ".$balance."\n";
+				if ($obj->status == CustomerReturn::STATUS_DRAFT && abs($balance) > 0.00001) {
+					print "  ** STRANDED: draft return still holding stock — reopen/reverse never completed **\n";
+				}
 			}
 		}
 		print "\n";
@@ -226,6 +246,94 @@ if ($mode === 'links' || $run_all) {
 			print "  [$row->rowid] source=$row->fk_source ($row->sourcetype) → target=$row->fk_target ($row->targettype)\n";
 		}
 		print "  Total: $cnt rows (max 50)\n";
+	}
+	print "\n";
+}
+
+
+// =====================================================================
+// STOCK
+// =====================================================================
+if ($mode === 'stock' || $run_all) {
+	print "--- STOCK MOVEMENT RECONCILIATION ---\n";
+
+	// Movements whose originating return no longer exists. These are the
+	// dangerous ones: qty is sitting in a warehouse with no document left to
+	// explain it, and nothing in the UI will ever surface them again.
+	print "\n  Orphaned movements (origin return no longer exists):\n";
+	$sql = "SELECT sm.rowid, sm.datem, sm.fk_origin, sm.fk_product, sm.batch, sm.value, sm.fk_entrepot, sm.label";
+	$sql .= " FROM ".MAIN_DB_PREFIX."stock_mouvement sm";
+	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."customer_return r ON r.rowid = sm.fk_origin";
+	$sql .= " WHERE sm.origintype = 'customerreturn' AND r.rowid IS NULL";
+	$sql .= " ORDER BY sm.fk_origin, sm.rowid";
+	$resql = $db->query($sql);
+	if ($resql) {
+		$cnt = 0;
+		$net = array();
+		while ($row = $db->fetch_object($resql)) {
+			$cnt++;
+			print "    [$row->rowid] $row->datem return_id=$row->fk_origin product=$row->fk_product batch=$row->batch qty=$row->value wh=$row->fk_entrepot — $row->label\n";
+			$key = $row->fk_origin.'|'.$row->fk_product.'|'.$row->batch.'|'.$row->fk_entrepot;
+			if (!isset($net[$key])) $net[$key] = 0;
+			$net[$key] += $row->value;
+		}
+		if ($cnt == 0) {
+			print "    (none)\n";
+		} else {
+			print "\n    Historical net per deleted return / product / batch / warehouse:\n";
+			foreach ($net as $key => $sum) {
+				list($rid, $pid, $bat, $wh) = explode('|', $key);
+				$flag = (abs($sum) > 0.00001) ? '  ** NEEDS REVIEW — see current qty below **' : '  (self-cancelling, harmless)';
+				print "      return_id=$rid product=$pid batch=$bat wh=$wh net=$sum$flag\n";
+			}
+			// Movement history is immutable, so a non-zero net stays on the books
+			// forever even after the stock is corrected. Print what the batch
+			// actually holds right now so a fixed row stops reading as broken.
+			print "\n    Current qty for the affected batches:\n";
+			foreach ($net as $key => $sum) {
+				if (abs($sum) <= 0.00001) continue;
+				list($rid, $pid, $bat, $wh) = explode('|', $key);
+				$sql = "SELECT pb.qty FROM ".MAIN_DB_PREFIX."product_batch pb";
+				$sql .= " INNER JOIN ".MAIN_DB_PREFIX."product_stock ps ON ps.rowid = pb.fk_product_stock";
+				$sql .= " WHERE ps.fk_product = ".((int) $pid);
+				$sql .= " AND ps.fk_entrepot = ".((int) $wh);
+				$sql .= " AND pb.batch = '".$db->escape($bat)."'";
+				$resql2 = $db->query($sql);
+				$qty = 0;
+				if ($resql2 && ($r2 = $db->fetch_object($resql2))) $qty = $r2->qty;
+				print "      product=$pid batch=$bat wh=$wh current_qty=$qty";
+				print ($qty > 0) ? "  ** still on hand — reconcile **\n" : "  (already corrected)\n";
+			}
+		}
+	} else {
+		print "    SQL ERROR: ".$db->lasterror()."\n";
+	}
+
+	// Existing returns whose balance disagrees with their status.
+	print "\n  Existing returns with an unexpected balance:\n";
+	dol_include_once('/'.$MODULE_NAME.'/class/customerreturn.class.php');
+	$sql = "SELECT rowid, ref, status FROM ".MAIN_DB_PREFIX."customer_return ORDER BY rowid";
+	$resql = $db->query($sql);
+	if ($resql) {
+		$rows = array();
+		while ($row = $db->fetch_object($resql)) $rows[] = $row;
+
+		$cnt = 0;
+		foreach ($rows as $row) {
+			$r = new CustomerReturn($db);
+			$r->id = $row->rowid;
+			$balance = $r->getStockMovementBalance();
+			// Draft => must be 0. Validated/closed => stock is legitimately held.
+			$expected_zero = ((int) $row->status === CustomerReturn::STATUS_DRAFT);
+			if ($expected_zero && abs($balance) > 0.00001) {
+				$cnt++;
+				print "    [$row->rowid] $row->ref status=$row->status balance=$balance  ** DRAFT HOLDING STOCK **\n";
+			} elseif (!$expected_zero && abs($balance) < 0.00001) {
+				$cnt++;
+				print "    [$row->rowid] $row->ref status=$row->status balance=$balance  ** VALIDATED BUT NO STOCK ADDED **\n";
+			}
+		}
+		if ($cnt == 0) print "    (none — all returns reconcile)\n";
 	}
 	print "\n";
 }

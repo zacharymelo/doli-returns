@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.4.0] - 2026-08-31
+
+### Fixed
+- Reopen is lot-aware again. v2.3.1 dropped the batch argument from `livraison()` to dodge lot-level stock checks; on a serialised product that made `MouvementStock::_create()` return `-2` outright ("stock movement without lot/serial information"), so reopen was broken for every lot-tracked product. The batch is now passed in its correct 10th position, and both `livraison()`/`reception()` call sites document that they order their params differently — the original v2.3.1 footgun.
+- Reopen no longer skips a line with no resolvable warehouse in silence. That path let reopen report success while leaving stock in place, which is how RT-2603-0001 stranded a serial.
+
+### Added
+- Stock-integrity invariant: a return's own movements must net to zero whenever it is not validated. Enforced in three places — `delete()` refuses a non-draft or any non-zero balance, `validate()` refuses a draft that already holds stock (no double-stacking), and `reopen()` verifies the reversal actually landed before committing.
+- Lot availability is checked before reversing. Core only enforces this when `STOCK_DISALLOW_NEGATIVE_TRANSFER` is set, which it need not be — without the check, naming an absent serial still succeeds and drives the lot negative. Refusal names the serial, warehouse, on-hand and needed qty.
+- `validate()` now refuses a lot-tracked line with no warehouse or no serial, so nothing can be created that `reopen()` could never undo.
+- New `CustomerReturn::getStockMovementBalance()`, `getBatchQtyInWarehouse()`, `productRequiresBatch()`.
+- New debug mode `?mode=stock` — reconciles movements against existing returns, flags orphans left by deleted returns, and prints each affected batch's current qty so a corrected row stops reading as broken.
+
+### Notes
+- Verified end-to-end on Dolibarr 22.0.4 with `STOCK_DISALLOW_NEGATIVE_TRANSFER` unset to match production: 34/34 assertions, covering reopen with the serial present, reopen refused after the serial shipped out, and the exact RT-2603-0001 stranded-draft state.
+- The warrantysvc module makes no stock movements and never calls these methods programmatically, so the stricter return values do not affect it. Its trigger still handles `CUSTOMERRETURN_CUSTOMERRETURN_VALIDATE` with no matching `REOPEN` handler — reopening a return leaves the service request advanced. Unchanged here; tracked for a follow-up in that module.
+
 ## [2.3.2] - 2026-04-21
 
 ### Fixed
