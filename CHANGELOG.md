@@ -15,7 +15,10 @@
 
 ### Notes
 - Verified end-to-end on Dolibarr 22.0.4 with `STOCK_DISALLOW_NEGATIVE_TRANSFER` unset to match production: 34/34 assertions, covering reopen with the serial present, reopen refused after the serial shipped out, and the exact RT-2603-0001 stranded-draft state.
-- The warrantysvc module makes no stock movements and never calls these methods programmatically, so the stricter return values do not affect it. Its trigger still handles `CUSTOMERRETURN_CUSTOMERRETURN_VALIDATE` with no matching `REOPEN` handler — reopening a return leaves the service request advanced. Unchanged here; tracked for a follow-up in that module.
+- The warrantysvc module never calls these methods programmatically (it fetches a return for display and links by URL), so the stricter return values do not affect it. It does not write `origintype='customerreturn'` movements either, which is what makes the balance invariant complete.
+- Correction to an earlier note in this entry: warrantysvc *does* cause stock movements on its other inbound path, indirectly via core `Reception::valid()` (`createReturnReception()` / `validateReception()`). Those carry `origintype='reception'` and are outside this invariant. That path is non-functional on Dolibarr 22 — see `docs/ARCHITECTURE.md`.
+- Its trigger still handles `CUSTOMERRETURN_CUSTOMERRETURN_VALIDATE` with no matching `REOPEN` handler — reopening a return leaves the service request advanced. Unchanged here; tracked for a follow-up in that module.
+- See `docs/ARCHITECTURE.md` for how the two modules divide responsibility.
 
 ## [2.3.2] - 2026-04-21
 

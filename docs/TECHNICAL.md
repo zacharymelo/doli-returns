@@ -6,6 +6,9 @@ Requires: Dolibarr >= 16.0, PHP >= 7.0, modules `modSociete`, `modProduct`, `mod
 
 Picto: `dollyrevert`
 
+For how this module pairs with the WarrantySvc / RMA module — the two inbound paths, lot ownership,
+and who may write stock movements — see [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ---
 
 ## Pages & URL Parameters

@@ -123,6 +123,8 @@ When the [WarrantySvc](https://github.com/zacharymelo/Dolibarr-Warranties) modul
 
 Because the RMA workflow tracks a unit in and a unit out by serial number, this module keeps serial identity intact across the whole return lifecycle -- the serial recorded on receipt is the serial reversed on reopen, so the warranty history always describes the physical unit it claims to.
 
+Keep the "Use Customer Returns" toggle enabled in WarrantySvc setup. Its alternative inbound path (core Reception) does not function on Dolibarr 22. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full integration picture.
+
 ## Screenshots
 
 **New Customer Return Form**
