@@ -159,13 +159,11 @@ type. `CustomerReturn::delete()` removes both.
 | Trigger | Fired by | Handled by | Effect |
 |---|---|---|---|
 | `CUSTOMERRETURN_CUSTOMERRETURN_VALIDATE` | Returns | WarrantySvc | Sets `date_return_received`, then advances SR Await Return -> In Progress **only if a resolution type is chosen** (diagnosis-first model, warrantysvc >= 1.34.0). With no resolution type the case stays in Await Return; from 1.35.0 the refusal is logged as a warning instead of being discarded. Versions <= 1.32.4 never advanced at all — `setInProgress()` rejected the transition silently. |
-| `CUSTOMERRETURN_CUSTOMERRETURN_REOPEN` | Returns | **nobody** | See below |
+| `CUSTOMERRETURN_CUSTOMERRETURN_REOPEN` | Returns | WarrantySvc (>= 1.36.0) | Inverse of VALIDATE: clears `date_return_received`, moves an In Progress case back to Await Return. Resolved/Closed cases keep their status — receipt date cleared, warning logged for manual review. |
 
-**Known asymmetry.** WarrantySvc advances the SR when a return is validated, but has no `REOPEN`
-handler. Reopening a return reverses the stock while leaving the SR advanced, still carrying a
-`date_return_received` for goods that are no longer in the warehouse. The returns module's lot guard
-narrows how often this is reachable (reopen is refused once the unit has shipped back out) but does not
-close it. Fixing it means adding the inverse handler in WarrantySvc.
+**History.** Until warrantysvc 1.36.0 there was no `REOPEN` handler: reopening a return reversed the
+stock while leaving the SR advanced with a `date_return_received` for goods no longer in the warehouse.
+Closed in 1.36.0 with the inverse handler above.
 
 ---
 
